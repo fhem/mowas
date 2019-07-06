@@ -2,11 +2,11 @@
 #
 #  77_MoWaS.pm
 #
-#  (c) 2019 K�lnsolar
+#  (c) 2019 Kölnsolar
 #
 #  Special thanks goes to comitters:
 #       - Marko Oldenburg (leongaultier at gmail dot com)
-#  
+#       - herrmannj (message filter by geographical base longitude/latitude + distance
 #  Storm warnings from unwetterzentrale.de
 #  inspired by 77_UWZ.pm
 #
@@ -32,7 +32,7 @@
 #  +*00:00:05 {fhem("define MoWaS_device MoWaS DE 50997 1200")}
 # keine korrekte Neuanlage bei defmod(bsp. URL)
 #
-#  $Id: 77_MoWaS.pm 17646 2018-10-30 11:20:16Z K�lnsolar $
+#  $Id: 77_MoWaS.pm 17646 2018-10-30 11:20:16Z Kölnsolar $
 #
 ####################################################################################################
 # also a thanks goes to hexenmeister
@@ -58,9 +58,9 @@ use vars qw($readingFnAttributes);
 use vars qw(%defs);
 
 my @DEweekdays = qw(Sonntag Montag Dienstag Mittwoch Donnerstag Freitag Samstag);
-my @DEmonths = ( "Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember");
+my @DEmonths = ( "Januar","Februar","MÃ¤rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember");
 my @ENweekdays = qw(sunday monday thuesday wednesday thursday friday saturday);
-my @ENmonths = ("January","February","March","April","Mäy","June","July","August","September","October","November","December");
+my @ENmonths = ("January","February","March","April","MÃ¤y","June","July","August","September","October","November","December");
 
 my $MODUL           = "MoWaS";
 my $version         = "0.0.1";
@@ -106,7 +106,8 @@ sub MoWaS_Initialize($) {
     $hash->{UndefFn}  = "MoWaS_Undef";
     $hash->{SetFn}    = "MoWaS_Set";
     $hash->{GetFn}    = "MoWaS_Get";
-    $hash->{AttrList} = "download:0,1 ".
+    $hash->{AttrList} = "distance:selectnumbers,0,1,99,0,lin ".
+			"download:0,1 ".
                         "savepath ".
                         "maps ".
 #                        "humanreadable:0,1 ".
@@ -432,9 +433,9 @@ sub MoWaS_Run($) {
 	$message .= $response;
     }
 
-    my $response = MoWaS_JSONAcquire($hash,"https://warnung.bund.de/bbk.katwarn/warnmeldungen.json"); 	# Katwarn-Meldungen
+    $response = MoWaS_JSONAcquire($hash,"https://warnung.bund.de/bbk.katwarn/warnmeldungen.json"); 	# Katwarn-Meldungen
     if (substr($response,0,5) ne "Error") {
-    MoWaS_Log $hash, 5, length($response)." characters captured from MoWaS:  ".$response;
+    MoWaS_Log $hash, 5, length($response)." characters captured from Katwarn:  ".$response;
     $MoWaS_warnings = JSON->new->ascii->decode($response);
    foreach my $element (@{$MoWaS_warnings}) {
         push @MoWaS_records, $element;
@@ -444,10 +445,23 @@ sub MoWaS_Run($) {
 	$message .= $response;
     } 
 
-   my $response = MoWaS_JSONAcquire($hash,"https://warnung.bund.de/bbk.biwapp/warnmeldungen.json"); 	# BIWAPP-Meldungen
+    $response = MoWaS_JSONAcquire($hash,"https://warnung.bund.de/bbk.biwapp/warnmeldungen.json"); 	# BIWAPP-Meldungen
     	$response =~ s/\\u/ /g; 
     if (substr($response,0,5) ne "Error") {
-    MoWaS_Log $hash, 5, length($response)." characters captured from MoWaS:  ".$response;
+    MoWaS_Log $hash, 5, length($response)." characters captured from BIWAPP:  ".$response;
+    $MoWaS_warnings = JSON->new->ascii->decode($response);
+   foreach my $element (@{$MoWaS_warnings}) {
+        push @MoWaS_records, $element;
+    }
+    }
+    else {
+	$message .= $response;
+    } 
+
+    $response = MoWaS_JSONAcquire($hash,"https://warnung.bund.de/bbk.dwd/unwetter.json"); 	# DWD-Meldungen
+#    	$response =~ s/\\u/ /g; 
+    if (substr($response,0,5) ne "Error") {
+    MoWaS_Log $hash, 5, length($response)." characters captured from DWD:  ".$response;
     $MoWaS_warnings = JSON->new->ascii->decode($response);
    foreach my $element (@{$MoWaS_warnings}) {
         push @MoWaS_records, $element;
@@ -507,47 +521,74 @@ sub MoWaS_Run($) {
 
     my @MoWaSmaxlevel;
     foreach my $single_warning (@sorted) {
-       MoWaS_Log $hash, 3, "Record with geocode: ".$single_warning->{'info'}[0]{'area'}[0]{'geocode'}[0]{'value'}." Sender: ".$single_warning->{'sender'};
-	if (substr($single_warning->{'info'}[0]{'area'}[0]{'geocode'}[0]{'value'},0,5) eq $hash->{geocode}) {
-#        push @MoWaSmaxlevel, MoWaS_GetMoWaSLevel($hash,$single_warning->{'urgency'});
- 	$message .= content($hash,"_EventID",$single_warning->{'identifier'},$i) if (defined($single_warning->{'identifier'})); 
- 	$message .= content($hash,"_Creation",$single_warning->{'sent'},$i) if (defined($single_warning->{'sent'})); 
- 	$message .= content($hash,"_Sender",$single_warning->{'sender'},$i) if (defined($single_warning->{'sender'})); 
- 	$message .= content($hash,"_Severity",$single_warning->{'info'}[0]{'severity'},$i) if (defined($single_warning->{'info'}[0]{'severity'})); 
- 	$message .= content($hash,"_End",$single_warning->{'info'}[0]{'expires'},$i) if (defined($single_warning->{'info'}[0]{'expires'})); 
- 	$message .= content($hash,"_Event",$single_warning->{'info'}[0]{'event'},$i) if (defined($single_warning->{'info'}[0]{'event'})); 
+		MoWaS_Log $hash, 3, "Record with Sender: ".$single_warning->{'sender'};
+		my $ii = 0;
+		while(defined($single_warning->{'info'}[0]{'area'}[$ii]{'geocode'})) {
+			MoWaS_Log $hash, 3, "       Record with geocode: ".$single_warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'};
 
- 	MoWaS_Log $hash, 2, "Warn_".$i."_status: ".$single_warning->{'status'} if (defined($single_warning->{'status'}) && $single_warning->{'status'} ne "Actual"); 
- 	MoWaS_Log $hash, 2, "Warn_".$i."_scope: ".$single_warning->{'scope'} if (defined($single_warning->{'scope'}) && $single_warning->{'scope'} ne "Public"); 
- 	MoWaS_Log $hash, 2, "Warn_".$i."_msgType: ".$single_warning->{'msgType'} if (defined($single_warning->{'msgType'}) && $single_warning->{'msgType'} ne "Alert" && $single_warning->{'msgType'} ne "Cancel"); 
- 	MoWaS_Log $hash, 2, "Warn_".$i."_certainty: ".$single_warning->{'info'}[0]{'certainty'} if (defined($single_warning->{'info'}[0]{'certainty'}) && $single_warning->{'info'}[0]{'certainty'} ne "Observed" && $single_warning->{'info'}[0]{'certainty'} ne "Unknown"); 
- 	MoWaS_Log $hash, 2, "Warn_".$i."_category: ".$single_warning->{'info'}[0]{'category'}[0] if (defined($single_warning->{'info'}[0]{'category'}[0]) && $single_warning->{'info'}[0]{'category'}[0] ne "Safety" && $single_warning->{'info'}[0]{'category'}[0] ne "Other"); 
- 	MoWaS_Log $hash, 2, "Warn_".$i."_urgency: ".$single_warning->{'info'}[0]{'urgency'} if (defined($single_warning->{'info'}[0]{'urgency'}) && $single_warning->{'info'}[0]{'urgency'} ne "Immediate" && $single_warning->{'info'}[0]{'urgency'} ne "Unknown"); 
+	#foreach my $geocode (@single_warning->{'info'}[0]{'area'}[0]{'geocode'}) {
+	#	my $ii = 0;
+	#	while(defined($single_warning->{'info'}[0]{'area'}[0]{'geocode'}[$ii]{'value'})) {
+			my $iii = 0;
+			while(defined($single_warning->{'info'}[0]{'area'}[$ii]{'polygon'}[$iii])) {
+				MoWaS_Log $hash, 3, "       Record with polygon: ".$single_warning->{'info'}[0]{'area'}[$ii]{'polygon'}[$iii];
+				my ($res,$dist)= (MoWaS_IsInArea($hash,AttrVal("global", "latitude", 0),AttrVal("global", "longitude", 0), $single_warning->{'info'}[0]{'area'}[$ii]{'polygon'}[$iii]));
+				if ($res || ($dist > 0 && $dist < AttrVal( $name, 'distance',0 ))) {
+		#	    if (substr($single_warning->{'info'}[0]{'area'}[0]{'geocode'}[$ii]{'value'},0,5) eq $hash->{geocode}) {
+					MoWaS_Log $hash, 3, "                     area: latitude and longitude matched in polygon: ".$single_warning->{'info'}[0]{'area'}[$ii]{'polygon'}[$iii];
+				#        push @MoWaSmaxlevel, MoWaS_GetMoWaSLevel($hash,$single_warning->{'urgency'});
+					$message .= content($hash,"_EventID",$single_warning->{'identifier'},$i) if (defined($single_warning->{'identifier'})); 
+					$message .= content($hash,"_Creation",$single_warning->{'sent'},$i) if (defined($single_warning->{'sent'})); 
+					$message .= content($hash,"_Sender",$single_warning->{'sender'},$i) if (defined($single_warning->{'sender'})); 
+					$message .= content($hash,"_Severity",$single_warning->{'info'}[0]{'severity'},$i) if (defined($single_warning->{'info'}[0]{'severity'})); 
+					$message .= content($hash,"_End",$single_warning->{'info'}[0]{'expires'},$i) if (defined($single_warning->{'info'}[0]{'expires'})); 
+					$message .= content($hash,"_Event",$single_warning->{'info'}[0]{'event'},$i) if (defined($single_warning->{'info'}[0]{'event'})); 
+					$message .= content($hash,"_Geocode",$single_warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'},$i) if (defined($single_warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'})); 
 
-#        MoWaS_Log $hash, 4, "Warn_".$i."_levelName: ".$single_warning->{'payload'}{'levelName'};
-#        $message .= "Warn_".$i."_levelName|".$single_warning->{'payload'}{'levelName'}."|";
+					MoWaS_Log $hash, 2, "Warn_".$i."_status: ".$single_warning->{'status'} if (defined($single_warning->{'status'}) && $single_warning->{'status'} ne "Actual"); 
+					MoWaS_Log $hash, 2, "Warn_".$i."_scope: ".$single_warning->{'scope'} if (defined($single_warning->{'scope'}) && $single_warning->{'scope'} ne "Public"); 
+					MoWaS_Log $hash, 2, "Warn_".$i."_msgType: ".$single_warning->{'msgType'} if (defined($single_warning->{'msgType'}) && $single_warning->{'msgType'} ne "Alert" && $single_warning->{'msgType'} ne "Cancel"&& $single_warning->{'msgType'} ne "Update"); 
+					MoWaS_Log $hash, 2, "Warn_".$i."_certainty: ".$single_warning->{'info'}[0]{'certainty'} if (defined($single_warning->{'info'}[0]{'certainty'}) && $single_warning->{'info'}[0]{'certainty'} ne "Observed" && $single_warning->{'info'}[0]{'certainty'} ne "Unknown"); 
+					MoWaS_Log $hash, 2, "Warn_".$i."_urgency: ".$single_warning->{'info'}[0]{'urgency'} if (defined($single_warning->{'info'}[0]{'urgency'}) && $single_warning->{'info'}[0]{'urgency'} ne "Immediate" && $single_warning->{'info'}[0]{'urgency'} ne "Unknown"); 
 
-        my $uclang = "EN";
-        if (AttrVal( $name, 'lang',undef) ) {
-            $uclang = uc AttrVal( $name, 'lang','');
-        } else {
-            # Begin Language by AttrVal
-            if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                $uclang = "DE";
-            } else {
-                $uclang = "EN";
-            }
-        }
+			#        MoWaS_Log $hash, 4, "Warn_".$i."_levelName: ".$single_warning->{'payload'}{'levelName'};
+			#        $message .= "Warn_".$i."_levelName|".$single_warning->{'payload'}{'levelName'}."|";
 
- 	$message .= content($hash,"_Contact",$single_warning->{'info'}[0]{'contact'},$i) if (defined($single_warning->{'info'}[0]{'contact'})); 
-	$message .= content($hash,"_Area",$single_warning->{'info'}[0]{'area'}[0]{'areaDesc'},$i) if (defined($single_warning->{'info'}[0]{'area'}[0]{'areaDesc'})); 
-	$message .= content($hash,"_Instruction",$single_warning->{'info'}[0]{'instruction'},$i) if (defined($single_warning->{'info'}[0]{'instruction'})); 
-	$message .= content($hash,"_ShortText",$single_warning->{'info'}[0]{'headline'},$i) if (defined($single_warning->{'info'}[0]{'headline'})); 
-	$message .= content($hash,"_LongText",$single_warning->{'info'}[0]{'description'},$i) if (defined($single_warning->{'info'}[0]{'description'})); 
-	$message .= content($hash,"_Sendername",$single_warning->{'info'}[0]{'parameter'}[0]{'value'},$i) if (defined($single_warning->{'info'}[0]{'parameter'}[0]{'value'})); 
+					my $uclang = "EN";
+					if (AttrVal( $name, 'lang',undef) ) {
+						$uclang = uc AttrVal( $name, 'lang','');
+					} else {
+						# Begin Language by AttrVal
+						if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
+							$uclang = "DE";
+						} else {
+							$uclang = "EN";
+						}
+					}
 
-        $i++;
-    }
+					if (defined($single_warning->{'info'}[0]{'category'}[0])) { 
+						if ($single_warning->{'info'}[0]{'category'}[0] ne "Safety" && $single_warning->{'info'}[0]{'category'}[0] ne "Other" && $single_warning->{'info'}[0]{'category'}[0] ne "Met") {
+						   MoWaS_Log $hash, 2, "Warn_".$i."_category: ".$single_warning->{'info'}[0]{'category'}[0] ; 
+						}
+						else {$message .= content($hash,"_Category",$single_warning->{'info'}[0]{'category'}[0],$i)}
+					}
+					$message .= content($hash,"_Contact",$single_warning->{'info'}[0]{'contact'},$i) if (defined($single_warning->{'info'}[0]{'contact'})); 
+					$message .= content($hash,"_Area",$single_warning->{'info'}[0]{'area'}[$ii]{'areaDesc'},$i) if (defined($single_warning->{'info'}[0]{'area'}[$ii]{'areaDesc'})); 
+					$message .= content($hash,"_Instruction",$single_warning->{'info'}[0]{'instruction'},$i) if (defined($single_warning->{'info'}[0]{'instruction'})); 
+					$message .= content($hash,"_ShortText",$single_warning->{'info'}[0]{'headline'},$i) if (defined($single_warning->{'info'}[0]{'headline'})); 
+					$message .= content($hash,"_LongText",$single_warning->{'info'}[0]{'description'},$i) if (defined($single_warning->{'info'}[0]{'description'})); 
+					if (defined($single_warning->{'sender'}) && substr($single_warning->{'sender'},4,3) ne "dwd") {
+					   $message .= content($hash,"_Sendername",$single_warning->{'info'}[0]{'parameter'}[0]{'value'},$i) if (defined($single_warning->{'info'}[0]{'parameter'}[0]{'value'})); 
+					} 
+					else {
+					   $message .= content($hash,"_Sendername",$single_warning->{'info'}[0]{'senderName'},$i); 
+					} 
+					$i++;
+				}
+				$iii++;
+			}
+			$ii++;
+		}
     }
 
     $message .= "durationFetchReadings|";
@@ -571,6 +612,90 @@ sub content($$$$) {
 	return "Warn_".$i.$field."|".$value."|";
 	
 }
+
+#####################################
+# check if geoposition is in polygon
+
+sub MoWaS_IsInArea {
+	my ($hash, $lat, $lon, $polygon) = @_;
+	my @p = split /\s/,$polygon;
+	my $wn = 0;
+	my $d = undef;
+
+	sub distance {
+		my ($lat1, $lon1, $lat2, $lon2, $unit) = @_;
+		if (($lat1 == $lat2) && ($lon1 == $lon2)) {
+			return 0;
+		} else {
+		my $theta = $lon1 - $lon2;
+		my $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+		$dist  = acos($dist);
+		$dist = rad2deg($dist);
+		return $dist * 60 * 1.852;
+		# $dist = $dist * 60 * 1.1515;
+		# if ($unit eq "K") {
+		#   $dist = $dist * 1.609344;
+		# } elsif ($unit eq "N") {
+		#   $dist = $dist * 0.8684;
+		# };
+		# 	return ($dist);
+		};
+	};
+
+	sub acos {
+		my ($rad) = @_;
+		my $ret = atan2(sqrt(1 - $rad**2), $rad);
+		return $ret;
+	};
+
+	sub deg2rad {
+		my ($deg) = @_;
+		my $pi = atan2(1,1) * 4;
+		return ($deg * $pi / 180);
+	};
+
+
+	sub rad2deg {
+		my ($rad) = @_;
+		my $pi = atan2(1,1) * 4;
+		return ($rad * 180 / $pi);
+	};
+
+	sub isLeft {
+		my ($p0x, $p0y, $p1x, $p1y, $p2x, $p2y) = @_;
+		return (($p1x - $p0x) * ($p2y - $p0y)
+            - ($p2x -  $p0x) * ($p1y - $p0y));
+	};
+
+        return(0,0) if (scalar(@p) < 3);
+
+	for (my $i=0; $i < (scalar(@p) - 1); $i++) {
+		my ($x1, $y1) = split /,/,$p[$i];
+		my ($x2, $y2) = split /,/,$p[$i +1];
+
+		my $di = distance($lat, $lon, $y1, $x1);
+		if (!$d or $di < $d) {
+			$d = $di;
+			#print "$d $y1 $x1 \n";
+		};
+
+		if ($y1 <= $lat) {
+#    MoWaS_Log $hash, 3, "area:   latitude ge: y1=$y1  y2=$y2";
+			if ($y2 > $lat) { # an upward crossing
+#   MoWaS_Log $hash, 3, "area:   counter before addition: $wn, x1=$x1 x2=$x2 y1=$y1 y2=$y2 ";
+				++$wn if (isLeft($x1, $y1, $x2, $y2, $lon, $lat) > 0);
+#    MoWaS_Log $hash, 3, "area:   counter after addition: $wn, x1=$x1 x2=$x2 y1=$y1 y2=$y2 ";
+			};
+		} elsif ($y2 <= $lat) { # a downward crossing
+#    MoWaS_Log $hash, 3, "area:   latitude ge: y2=$y2 ; counter before substraction: $wn, x1=$x1 x2=$x2 y1=$y1 y2=$y2  ";
+			--$wn if (isLeft($x1, $y1, $x2, $y2, $lon, $lat) < 0);
+#    MoWaS_Log $hash, 3, "area:   counter after substraction: $wn, x1=$x1 x2=$x2 y1=$y1 y2=$y2 ";
+		};	
+	};
+
+	return (1, 0) if $wn; # location is in Area
+	return (0, $d); # location is _not_ in Area but $d km away
+};
 
 #####################################
 # asyncronous callback by blocking
@@ -656,6 +781,8 @@ sub MoWaS_JSONAcquire($$) {
 		};
 
     my ($err, $data) = HttpUtils_BlockingGet($param);
+#    MoWaS_Log $hash, 3, "HTTP_Utils with $param. Result, $data, Error: $err";
+
      
     if ( $err ne "" ) {
     	my $err_log  =  "Can't get $URL -- " . $err;
@@ -1553,11 +1680,11 @@ sub MoWaSSearchAreaID($$) {
 <h3>MoWaS</h3> 
 <ul>
    <a name="MoWaSdefine"></a>
-   Das Modul extrahiert Bev�lkerungsschutzwarnungen(MoWaS) von <a href="http://www.unwetterzentrale.de">www.unwetterzentrale.de</a>.
+   Das Modul extrahiert Bevölkerungsschutzwarnungen(MoWaS) von <a href="http://www.unwetterzentrale.de">www.unwetterzentrale.de</a>.
    <br/>
-   Hierfür wird die selbe Schnittstelle verwendet die auch die Android App <a href="http://www.alertspro.com">Alerts Pro</a> nutzt.
-   Es werden maximal 10 Standortbezogene Unwetterwarnungen zur Verfügung gestellt.
-   Weiterhin verfügt das Modul über HTML-Templates welche als weblink verwendet werden können.
+   HierfÃ¼r wird die selbe Schnittstelle verwendet die auch die Android App <a href="http://www.alertspro.com">Alerts Pro</a> nutzt.
+   Es werden maximal 10 Standortbezogene Unwetterwarnungen zur VerfÃ¼gung gestellt.
+   Weiterhin verfÃ¼gt das Modul Ã¼ber HTML-Templates welche als weblink verwendet werden kÃ¶nnen.
    <br>
    <i>Es nutzt die Perl-Module JSON, Encode::Guess und HTML::Parse</i>.
    <br/><br/>
@@ -1577,7 +1704,7 @@ sub MoWaSSearchAreaID($$) {
       </li><br>
       <li><code>[Postleitzahl/AreaID]</code>
          <br>
-         Die Postleitzahl/AreaID des Ortes für den Unwetterinformationen abgefragt werden sollen. 
+         Die Postleitzahl/AreaID des Ortes fÃ¼r den Unwetterinformationen abgefragt werden sollen. 
          <br>
       </li><br>
       <li><code>[INTERVAL]</code>
@@ -1660,7 +1787,7 @@ sub MoWaSSearchAreaID($$) {
       <br>
       <li><code>download</code>
          <br>
-         Download Unwetterkarten während des updates (0|1). 
+         Download Unwetterkarten wÃ¤hrend des updates (0|1). 
          <br>
       </li>
       <li><code>savepath</code>
@@ -1670,7 +1797,7 @@ sub MoWaSSearchAreaID($$) {
       </li>
       <li><code>maps</code>
          <br>
-         Leerzeichen separierte Liste der zu speichernden Karten. Für mögliche Karten siehe <code>MoWaSAsHtmlKarteLand</code>.
+         Leerzeichen separierte Liste der zu speichernden Karten. FÃ¼r mÃ¶gliche Karten siehe <code>MoWaSAsHtmlKarteLand</code>.
          <br>
       </li>
       <li><code>humanreadable</code>
@@ -1680,7 +1807,7 @@ sub MoWaSSearchAreaID($$) {
       </li>
       <li><code>lang</code>
          <br>
-         Umschalten der angeforderten Sprache für kurz und lange warn text. (de|en|it|fr|es|..). 
+         Umschalten der angeforderten Sprache fÃ¼r kurz und lange warn text. (de|en|it|fr|es|..). 
          <br>
       </li>
       <li><code>sort_readings_by</code>
@@ -1728,8 +1855,8 @@ sub MoWaSSearchAreaID($$) {
       <li><b>WarnMoWaSLevel</b> - Gesamt Warn Level </li>
       <li><b>WarnMoWaSLevel_Color</b> - Gesamt Warn Level Farbe</li>
       <li><b>WarnMoWaSLevel_Str</b> - Gesamt Warn Level Text</li>
-      <li><b>Warn_</b><i>0</i><b>_AltitudeMin</b> - minimum Höhe für Warnung </li>
-      <li><b>Warn_</b><i>0</i><b>_AltitudeMax</b> - maximum Höhe für Warnung </li>
+      <li><b>Warn_</b><i>0</i><b>_AltitudeMin</b> - minimum HÃ¶he fÃ¼r Warnung </li>
+      <li><b>Warn_</b><i>0</i><b>_AltitudeMax</b> - maximum HÃ¶he fÃ¼r Warnung </li>
       <li><b>Warn_</b><i>0</i><b>_EventID</b> - EventID der Warnung </li>
       <li><b>Warn_</b><i>0</i><b>_Creation</b> - Warnungs Erzeugung </li>
       <li><b>Warn_</b><i>0</i><b>_Creation_Date</b> - Warnungs Erzeugungs Datum </li>
@@ -1753,7 +1880,7 @@ sub MoWaSSearchAreaID($$) {
         <li><b>5</b> - Extremfrost</li>
         <li><b>6</b> - Waldbrandgefahr</li>
         <li><b>7</b> - Gewitter</li>
-        <li><b>8</b> - Glätte</li>
+        <li><b>8</b> - GlÃ¤tte</li>
         <li><b>9</b> - Hitze</li>
         <li><b>10</b> - Glatteisregen</li>
         <li><b>11</b> - Bodenfrost</li>
@@ -1762,7 +1889,7 @@ sub MoWaSSearchAreaID($$) {
       <li><b>Warn_</b><i>0</i><b>_MoWaSLevel_Str</b> - Unwetterwarnstufe (text)</li>
       <li><b>Warn_</b><i>0</i><b>_levelName</b> - Level Warn Name</li>
       <li><b>Warn_</b><i>0</i><b>_ShortText</b> - Kurzbeschreibung der Warnung</li>
-      <li><b>Warn_</b><i>0</i><b>_LongText</b> - Ausführliche Unwetterbeschreibung</li>
+      <li><b>Warn_</b><i>0</i><b>_LongText</b> - AusfÃ¼hrliche Unwetterbeschreibung</li>
       <li><b>Warn_</b><i>0</i><b>_IconURL</b> - Kumulierte URL um Warnungs-Icon von <a href="http://www.unwetterzentrale.de">www.unwetterzentrale.de</a> anzuzeigen</li>
    </ul>
    <br>
@@ -1772,7 +1899,7 @@ sub MoWaSSearchAreaID($$) {
    <ul>
       <br>
 
-      &Uuml;ber die Funktionen <code>MoWaSAsHtml, MoWaSAsHtmlLite, MoWaSAsHtmlFP, MoWaSAsHtmlKarteLand, MoWaSAsHtmlMovie</code> wird HTML-Code zur Warnanzeige und Wetterfilme über weblinks erzeugt.
+      &Uuml;ber die Funktionen <code>MoWaSAsHtml, MoWaSAsHtmlLite, MoWaSAsHtmlFP, MoWaSAsHtmlKarteLand, MoWaSAsHtmlMovie</code> wird HTML-Code zur Warnanzeige und Wetterfilme Ã¼ber weblinks erzeugt.
       <br><br><br>
       Beispiele:
       <br>
