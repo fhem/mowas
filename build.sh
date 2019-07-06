@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module_file="FHEM/60_MoWaS.pm"
+module_file="FHEM/77_MoWaS.pm"
 commandref_de_source="CommandRef.de.md"
 commandref_en_source="CommandRef.en.md"
 meta_source="meta.json"
