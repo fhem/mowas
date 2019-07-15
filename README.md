@@ -1,2 +1,2 @@
-# mowas
-MoWaS - Modulares Warnsystem Deutschland
+# nina
+NINA - Notfall-Informations- und Nachrichten-App 

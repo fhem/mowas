@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-module_file="FHEM/77_MoWaS.pm"
+module_file="FHEM/77_nina.pm"
 commandref_de_source="CommandRef.de.md"
 commandref_en_source="CommandRef.en.md"
 meta_source="meta.json"
-name="bfs"
-controls_file="controls_MoWaS.txt"
+name="nina"
+controls_file="controls_nina.txt"
 changed_file="CHANGED"
 
 #   +------------------------------------------------------------
