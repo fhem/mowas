@@ -106,7 +106,8 @@ sub Nina_Initialize($) {
     $hash->{UndefFn}  = "Nina_Undef";
     $hash->{SetFn}    = "Nina_Set";
     $hash->{GetFn}    = "Nina_Get";
-    $hash->{AttrList} = "distance:selectnumbers,0,1,99,0,lin ".
+    $hash->{AttrList} = "disableDWD:0,1 ".
+			"distance:selectnumbers,0,1,99,0,lin ".
 			"download:0,1 ".
                         "savepath ".
                         "maps ".
@@ -120,7 +121,7 @@ sub Nina_Initialize($) {
                         "longitude ".
                         "sort_readings_by:distance,creation,warnlevel ".
                         "localiconbase ".
-#                        "intervalAtWarnLevel ".
+                        "intervalAtWarnLevel ".
                         "disable:1 ".
                         $readingFnAttributes;
    
@@ -423,7 +424,7 @@ sub Nina_Run($) {
     my ($Nina_warnings, @Nina_records, $enc) = "";
 
     # acquire the json-response
-    my $response = Nina_JSONAcquire($hash,$hash->{URL}); 					     # Nina-Meldungen
+    my $response = Nina_JSONAcquire($hash,$hash->{URL}); 					     # MoWaS-Meldungen
 #    my $response = Nina_JSONAcquire($hash,"http://feed.alertspro.meteogroup.com/AlertsPro/AlertsProPollService.php?method=getWarning&language=de&areaID=UWZDE39517"); 
     if (substr($response,0,5) ne "Error") {
     Nina_Log $hash, 5, length($response)." characters captured from Nina:  ".$response;
@@ -459,11 +460,25 @@ sub Nina_Run($) {
 	$message .= $response;
     } 
 
+    if(!AttrVal($name,"disableDWD",0)) {
     $response = Nina_JSONAcquire($hash,"https://warnung.bund.de/bbk.dwd/unwetter.json"); 	# DWD-Meldungen
 #    	$response =~ s/\\u/ /g; 
     if (substr($response,0,5) ne "Error") {
     Nina_Log $hash, 5, length($response)." characters captured from DWD:  ".$response;
-    $Nina_warnings = JSON->new->ascii->decode($response);
+    $Nina_warnings = JSON->new->ascii->decode($response);  #'"' expected, at character offset 2 (before "(end of string)") 
+   foreach my $element (@{$Nina_warnings}) {
+        push @Nina_records, $element;
+    }
+    }
+    else {
+	$message .= $response;
+    }
+    } 
+    $response = Nina_JSONAcquire($hash,"https://warnung.bund.de/bbk.lhp/hochwassermeldungen.json"); 	# Hochwasser-Meldungen
+#    	$response =~ s/\\u/ /g; 
+    if (substr($response,0,5) ne "Error") {
+    Nina_Log $hash, 5, length($response)." characters captured from HWZ:  ".$response;
+    $Nina_warnings = JSON->new->ascii->decode($response);  
    foreach my $element (@{$Nina_warnings}) {
         push @Nina_records, $element;
     }
@@ -508,15 +523,14 @@ sub Nina_Run($) {
                             "11" => "rot",
                             "12" => "violett" );
 
-Nina_Log $hash, 4, "Start Loop of record filtering ";
 
     my (@Ninamaxlevel, @Nina_filtered_records, $latitude, $longitude);
     my ($new_warnings_count,$warnings_in_area)  = (0,0);
 
-    $latitude  = AttrVal($name, "latitude", undef);
-    $latitude  = AttrVal("global", "latitude", 0) if (!defined($latitude));
-    $longitude = AttrVal($name, "longitude", undef);
-    $longitude = AttrVal("global", "longitude", 0) if (!defined($longitude));
+    $latitude  = AttrVal($name, "latitude", AttrVal("global", "latitude", 0));
+    $longitude = AttrVal($name, "longitude", AttrVal("global", "longitude", 0));
+
+Nina_Log $hash, 4, "Start Loop of record selection: latitude=$latitude, longitude=$longitude";
     foreach my $single_warning (@{$Nina_warnings}) {
 		my ($ii, $flag_warning_in_area)  = (0,0,);# $ii counter for area array
 		Nina_Log $hash, 4, "Record with sender: ".$single_warning->{'sender'};
@@ -542,6 +556,7 @@ Nina_Log $hash, 4, "Start Loop of record filtering ";
 				}
 				$iii++;
 			}
+	Nina_Log $hash, 3, "Severity MoWaS: $single_warning->{'info'}[0]{'severity'} for $single_warning->{'info'}[0]{'area'}[$ii]{'areaDesc'}" if (defined($single_warning->{'info'}[0]{'severity'}) && $single_warning->{'info'}[0]{'severity'} ne "Minor" && defined($single_warning->{'sender'}) && substr($single_warning->{'sender'},4,3) ne "dwd"); 
 			$ii++;
 		}
 		if ($flag_warning_in_area || defined($single_warning->{'distance'})) {
@@ -602,7 +617,7 @@ sub Nina_Done($) {
     Nina_Log $hash, 5, "Starting Readings Update.";
 
     if ( defined $values{Error} ) {
-        readingsBulkUpdate( $hash, "lastConnection", $values{Error} );
+        readingsBulkUpdateIfChanged( $hash, "lastConnection", $values{Error} );
     } else {
 	my $new_warnings_count  = 0;  # new reading NewWarnings
         while (my ($rName, $rValue) = each(%values) ) {
@@ -613,17 +628,17 @@ sub Nina_Done($) {
  #                    Nina_Log $hash, 4, "Delete old warning before rewrite"; 
  #                    CommandDeleteReading(undef, "$hash->{NAME} Warn_". substr($rName,5,2)."_.*") # delete all readings of warning
                   }
-                  readingsBulkUpdateIfChanged( $hash, $rName, $rValue,1 );    # update of reading with event only for selected readings
+                  readingsBulkUpdateIfChanged( $hash, $rName, $rValue,1 );    # update of reading with event for _EventID, if changed
 		}
 	       else {
 	           if ($rName =~ m/_Level/) {
 		     $max_level = $rValue if ($rValue gt $max_level );  # max level of warnings
                	   }
-                  readingsBulkUpdate( $hash, $rName, $rValue,0 );    # update of reading but no event
+                  readingsBulkUpdateIfChanged( $hash, $rName, $rValue,0 );    # update of reading if changed w/o event
                }
             }
 	    else {
-               readingsBulkUpdateIfChanged( $hash, $rName, $rValue,1 );    # update of reading with event only for selected readings
+               readingsBulkUpdateIfChanged( $hash, $rName, $rValue,1 );    # update of reading if changed with event only for selected("header") readings
             }
             Nina_Log $hash, 5, "reading:$rName value:$rValue";
         }
@@ -642,22 +657,23 @@ sub Nina_Done($) {
             } else {
                 $newState = "Error: Could not capture all data. Please check CountryCode and geocode.";
             }
-            readingsBulkUpdateIfChanged($hash, "WarnLevelMax", $max_level,1 );    # update of reading with event only for selected readings
-            readingsBulkUpdateIfChanged($hash, "NewWarnings", $new_warnings_count);
+  #          readingsBulkUpdateIfChanged($hash, "WarnLevelMax", $max_level,1 );    # update of reading only if changed
+            readingsBulkUpdate($hash, "WarnLevelMax", $max_level,1 );    # update of reading and event for each cycle
+            readingsBulkUpdateIfChanged($hash, "NewWarnings", $new_warnings_count,1);
             readingsBulkUpdate($hash, "state", $newState);
-            readingsBulkUpdate( $hash, "lastConnection", keys( %values )." values captured in ".$values{durationFetchReadings}." s",0);
+            readingsBulkUpdateIfChanged($hash, "lastConnection", keys( %values )." values captured in ".$values{durationFetchReadings}." s",1);
             Nina_Log $hash, 4, keys( %values )." values captured";
         } else {
 	    readingsBulkUpdate( $hash, "lastConnection", "no data found" );
-            Nina_Log $hash, 1, "No data found. Check city name or URL.";
+            Nina_Log $hash, 1, "No data found. Check global device for latitude/longitude attributes";
         }
     }
     
     readingsEndUpdate( $hash, 1 );
     
-    if( AttrVal($name,'intervalAtWarnLevel','') ne '' and ReadingsVal($name,'WarnNinaLevel',0) > 1 ) {#
-#        Nina_IntervalAtWarnLevel($hash);
-#        Nina_Log $hash, 5, "run Sub IntervalAtWarnLevel"; 
+    if( AttrVal($name,'intervalAtWarnLevel','') ne '' && ReadingsVal($name,'WarnLevelMax',0) > 1 ) {
+        Nina_IntervalAtWarnLevel($hash);
+        Nina_Log $hash, 5, "run Sub IntervalAtWarnLevel"; 
     }
 }
 
@@ -820,15 +836,14 @@ sub Nina_preparemessage {
                             "Cancel" => "0",
                             "Alert" => "4",
                             "Update" => "4" );
-	my $message = content($hash,"_EventID",$warning->{'identifier'},$i) if (defined($warning->{'identifier'})); 
+	my $message = Nina_content($hash,"_EventID",$warning->{'identifier'},$i) if (defined($warning->{'identifier'})); 
 
-	$message .= content($hash,"_Distance",$distance,$i);
-	$message .= content($hash,"_Creation",$warning->{'sent'},$i) if (defined($warning->{'sent'}));
-	$message .= content($hash,"_Sender",$warning->{'sender'},$i) if (defined($warning->{'sender'})); 
-	$message .= content($hash,"_Severity",$warning->{'info'}[0]{'severity'},$i) if (defined($warning->{'info'}[0]{'severity'})); 
-	$message .= content($hash,"_End",$warning->{'info'}[0]{'expires'},$i) if (defined($warning->{'info'}[0]{'expires'})); 
-	$message .= content($hash,"_Event",$warning->{'info'}[0]{'event'},$i) if (defined($warning->{'info'}[0]{'event'})); 
-	$message .= content($hash,"_Geocode",$warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'},$i) if (defined($warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'})); 
+	$message .= Nina_content($hash,"_Distance",$distance,$i);
+	$message .= Nina_content($hash,"_Creation",$warning->{'sent'},$i) if (defined($warning->{'sent'}));
+	$message .= Nina_content($hash,"_Sender",$warning->{'sender'},$i) if (defined($warning->{'sender'})); 
+	$message .= Nina_content($hash,"_Severity",$warning->{'info'}[0]{'severity'},$i) if (defined($warning->{'info'}[0]{'severity'})); 
+	$message .= Nina_content($hash,"_End",$warning->{'info'}[0]{'expires'},$i) if (defined($warning->{'info'}[0]{'expires'})); 
+	$message .= Nina_content($hash,"_Geocode",$warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'},$i) if (defined($warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'})); 
 
 	Nina_Log $hash, 2, "Warn_".$i."_status: ".$warning->{'status'} if (defined($warning->{'status'}) && $warning->{'status'} ne "Actual"); 
 	Nina_Log $hash, 2, "Warn_".$i."_scope: ".$warning->{'scope'} if (defined($warning->{'scope'}) && $warning->{'scope'} ne "Public"); 
@@ -837,6 +852,7 @@ sub Nina_preparemessage {
 	Nina_Log $hash, 2, "Warn_".$i."_urgency: ".$warning->{'info'}[0]{'urgency'} if (defined($warning->{'info'}[0]{'urgency'}) && $warning->{'info'}[0]{'urgency'} ne "Immediate" && $warning->{'info'}[0]{'urgency'} ne "Unknown"); 
 # severity bei dwd scheinbar korrespondierend zur Farbe orange=Moderate, rot=Severe, violett=Extreme, Nina: Minor
 	Nina_Log $hash, 2, "Warn_".$i."_severity: ".$warning->{'info'}[0]{'severity'} if (defined($warning->{'info'}[0]{'severity'}) && $warning->{'info'}[0]{'severity'} ne "Severe" && $warning->{'info'}[0]{'severity'} ne "Moderate" && $warning->{'info'}[0]{'severity'} ne "Extreme" && $warning->{'info'}[0]{'severity'} ne "Minor"); 
+	Nina_Log $hash, 2, "Warn_".$i."_responseType: ".$warning->{'info'}[0]{'responseType'} if (defined($warning->{'info'}[0]{'responseType'}) && $warning->{'info'}[0]{'responseType[0]'} ne "Prepare"); 
 
 #        Nina_Log $hash, 4, "Warn_".$i."_levelName: ".$warning->{'payload'}{'levelName'};
 #        $message .= "Warn_".$i."_levelName|".$warning->{'payload'}{'levelName'}."|";
@@ -853,33 +869,36 @@ sub Nina_preparemessage {
 		}
 	}
 
-	if (defined($warning->{'info'}[0]{'category'}[0])) { 
-		if ($warning->{'info'}[0]{'category'}[0] ne "Safety" && $warning->{'info'}[0]{'category'}[0] ne "Fire" && $warning->{'info'}[0]{'category'}[0] ne "Other" && $warning->{'info'}[0]{'category'}[0] ne "Met") {
-		   Nina_Log $hash, 2, "Warn_".$i."_category: ".$warning->{'info'}[0]{'category'}[0] ; 
-		}
-		else {$message .= content($hash,"_Category",$warning->{'info'}[0]{'category'}[0],$i)}
-	}
-	$message .= content($hash,"_Contact",$warning->{'info'}[0]{'contact'},$i) if (defined($warning->{'info'}[0]{'contact'})); 
-	$message .= content($hash,"_Area",$warning->{'info'}[0]{'area'}[$ii]{'areaDesc'},$i) if (defined($warning->{'info'}[0]{'area'}[$ii]{'areaDesc'})); 
-	$message .= content($hash,"_Instruction",$warning->{'info'}[0]{'instruction'},$i) if (defined($warning->{'info'}[0]{'instruction'})); 
-	$message .= content($hash,"_ShortText",$warning->{'info'}[0]{'headline'},$i) if (defined($warning->{'info'}[0]{'headline'})); 
-	$message .= content($hash,"_LongText",$warning->{'info'}[0]{'description'},$i) if (defined($warning->{'info'}[0]{'description'})); 
+#   values of Category: Safety, Fire, Other, Met, Infra
+	$message .= Nina_content($hash,"_Category",$warning->{'info'}[0]{'category'}[0],$i) if (defined($warning->{'info'}[0]{'category'}[0]));
+	$message .= Nina_content($hash,"_Contact",$warning->{'info'}[0]{'contact'},$i) if (defined($warning->{'info'}[0]{'contact'})); 
+	$message .= Nina_content($hash,"_Area",$warning->{'info'}[0]{'area'}[$ii]{'areaDesc'},$i) if (defined($warning->{'info'}[0]{'area'}[$ii]{'areaDesc'})); 
+	$message .= Nina_content($hash,"_Instruction",$warning->{'info'}[0]{'instruction'},$i) if (defined($warning->{'info'}[0]{'instruction'})); 
+	$message .= Nina_content($hash,"_ShortText",$warning->{'info'}[0]{'headline'},$i) if (defined($warning->{'info'}[0]{'headline'})); 
+	$message .= Nina_content($hash,"_LongText",$warning->{'info'}[0]{'description'},$i) if (defined($warning->{'info'}[0]{'description'})); 
+
+	my $event = $warning->{'info'}[0]{'event'} if (defined($warning->{'info'}[0]{'event'})); 
 
 	if (defined($warning->{'sender'}) && substr($warning->{'sender'},4,3) ne "dwd") {
-	   $message .= content($hash,"_Sendername",$warning->{'info'}[0]{'parameter'}[0]{'value'},$i) if (defined($warning->{'info'}[0]{'parameter'}[0]{'value'})); 
-	   $message .= content($hash,"_Level",$warnlevel{$warning->{'msgType'}},$i) if (defined($warning->{'msgType'}));
+	   $message .= Nina_content($hash,"_Sendername",$warning->{'info'}[0]{'parameter'}[0]{'value'},$i) if (defined($warning->{'info'}[0]{'parameter'}[0]{'value'})); 
+	   $message .= Nina_content($hash,"_Level",$warnlevel{$warning->{'msgType'}},$i) if (defined($warning->{'msgType'}));
 	} 
 	else {
-	   $message .= content($hash,"_Sendername",$warning->{'info'}[0]{'senderName'},$i); 
+	   $message .= Nina_content($hash,"_Sendername",$warning->{'info'}[0]{'senderName'},$i); 
+	   $message .= Nina_content($hash,"_Event",$warning->{'info'}[0]{'event'},$i) if (defined($warning->{'info'}[0]{'event'})); 
             for my $Counter (0 .. scalar(@{$warning->{'info'}[0]{'eventCode'}})-1) {
-Nina_Log $hash, 2, "Warn_".$i."_color unknown: $warning->{'info'}[0]{'eventCode'}[$Counter]{'value'}" if($warning->{'info'}[0]{'eventCode'}[$Counter]{'valueName'} eq "AREA_COLOR" && !defined($color{$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'}}));
 	 	if($warning->{'info'}[0]{'eventCode'}[$Counter]{'valueName'} eq "AREA_COLOR") {
 		   my $color_text = $color{$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'}};
-		   $message .= content($hash,"_Color",$color_text,$i);
-		   $message .= content($hash,"_Level",$warnlevel{$color_text},$i);
+		   $message .= Nina_content($hash,"_Color",$color_text,$i);
+		   $message .= Nina_content($hash,"_Level",$warnlevel{$color_text},$i);
+	    	}
+	 	elsif($warning->{'info'}[0]{'eventCode'}[$Counter]{'valueName'} eq "GROUP") {
+		   $event .= ", ".$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'};
 	    	}
 	    }
 	} 
+	
+	$message .= Nina_content($hash,"_Event",$event,$i); 
 
 	return $message;
 					
@@ -887,7 +906,7 @@ Nina_Log $hash, 2, "Warn_".$i."_color unknown: $warning->{'info'}[0]{'eventCode'
 
 #####################################
 # asyncronous callback by blocking
-sub content($$$$) {
+sub Nina_content($$$$) {
 
 	my ($hash,$field,$value,$i) = @_;
 	my $string;
@@ -1003,10 +1022,10 @@ sub NinaAsHtml($;$) {
         $ret .= '<table class="block" '.$attr.'><tr><th class="'.$htmltitleclass.'" colspan="2">'.$htmltitle.'</th></tr>';
         if ($htmlsequence eq "descending") {
             for ( my $i=ReadingsVal($name, "WarnCount", -1)-1; $i>=0; $i--){
-                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_".$i."_IconURL", "").'"></td>';
-                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_".$i."_ShortText", "").'</b><br><br>';
-                $ret .= ReadingsVal($name, "Warn_".$i."_LongText", "").'<br><br>';
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_".$i."_Start", ""));
+                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
+                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_0".$i."_ShortText", "").'</b><br><br>';
+                $ret .= ReadingsVal($name, "Warn_0".$i."_LongText", "").'<br><br>';
+                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_Start", ""));
                 if (length($hour) == 1) {$hour = "0$hour";}
                 if (length($min) == 1) {$min = "0$min";}
                 # language by AttrVal
@@ -1017,7 +1036,7 @@ sub NinaAsHtml($;$) {
                 }
                 # end language by AttrVal
                 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = undef;
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_".$i."_End", ""));
+                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_End", ""));
                 if (length($hour) == 1) {$hour = "0$hour";}
                 if (length($min) == 1) {$min = "0$min";}
                 # language by AttrVal
@@ -1033,10 +1052,10 @@ sub NinaAsHtml($;$) {
         } else {
 ###        
             for ( my $i=0; $i<ReadingsVal($name, "WarnCount", 0); $i++){
-                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_".$i."_IconURL", "").'"></td>';
-                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_".$i."_ShortText", "").'</b><br><br>';
-                $ret .= ReadingsVal($name, "Warn_".$i."_LongText", "").'<br><br>';
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_".$i."_Start", ""));
+                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
+                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_0".$i."_ShortText", "").'</b><br><br>';
+                $ret .= ReadingsVal($name, "Warn_0".$i."_LongText", "").'<br><br>';
+                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_Start", ""));
                 if (length($hour) == 1) {$hour = "0$hour";}
                 if (length($min) == 1) {$min = "0$min";}
                 # language by AttrVal
@@ -1047,7 +1066,7 @@ sub NinaAsHtml($;$) {
                 }
                 # end language by AttrVal
                 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = undef;
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_".$i."_End", ""));
+                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_End", ""));
                 if (length($hour) == 1) {$hour = "0$hour";}
                 if (length($min) == 1) {$min = "0$min";}
                 # language by AttrVal
@@ -1108,9 +1127,11 @@ sub NinaAsHtmlLite($;$) {
         $ret .= '<table class="block" '.$attr.'><tr><th class="'.$htmltitleclass.'" colspan="2">'.$htmltitle.'</th></tr>';
         if ($htmlsequence eq "descending") {
             for ( my $i=ReadingsVal($name, "WarnCount", "")-1; $i>=0; $i--){
-                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_".$i."_IconURL", "").'"></td>';
-                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_".$i."_ShortText", "").'</b><br><br>';
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_".$i."_Start", ""));
+# /assets/images/icons/ic_unwetter_weiss.png  /assets/images/icons/ic_hochwasser_weiss.png /assets/images/icons/notfalltipps.png /assets/images/icons/kontakt.png /assets/images/icons/notfalltipps-w.png /assets/images/icons/ic_mowa.png /assets/images/icons/dwd_logo.png
+#                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="http://warnung.bund.de/bbk.webapp/assets/images/Schutzzeichen_share.png"></td>';
+                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
+                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_0".$i."_ShortText", "").'</b><br><br>';
+                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_Start", ""));
                 if (length($hour) == 1) {$hour = "0$hour";}
                 if (length($min) == 1) {$min = "0$min";}
                 # language by AttrVal
@@ -1121,7 +1142,7 @@ sub NinaAsHtmlLite($;$) {
                 }
 # end language by AttrVal
                 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = undef;
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_".$i."_End", ""));
+                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_End", ""));
                 if (length($hour) == 1) {$hour = "0$hour";}
                 if (length($min) == 1) {$min = "0$min";}
                 # language by AttrVal
@@ -1136,9 +1157,9 @@ sub NinaAsHtmlLite($;$) {
             }
         } else {
             for ( my $i=0; $i<ReadingsVal($name, "WarnCount", ""); $i++){
-                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_".$i."_IconURL", "").'"></td>';
-                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_".$i."_ShortText", "").'</b><br><br>';
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_".$i."_Start", ""));
+                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
+                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_0".$i."_ShortText", "").'</b><br><br>';
+                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_Start", ""));
                 if (length($hour) == 1) {$hour = "0$hour";}
                 if (length($min) == 1) {$min = "0$min";}
                 # language by AttrVal
@@ -1149,7 +1170,7 @@ sub NinaAsHtmlLite($;$) {
                 }
                 # end language by AttrVal
                 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = undef;
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_".$i."_End", ""));
+                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_End", ""));
                 if (length($hour) == 1) {$hour = "0$hour";}
                 if (length($min) == 1) {$min = "0$min";}
                 # language by AttrVal
@@ -1201,11 +1222,11 @@ sub NinaAsHtmlFP($;$) {
     
     if ($htmlsequence eq "descending") {
         for ( my $i=ReadingsVal($name, "WarnCount", "")-1; $i>=0; $i--){
-            $ret .= '<td class="NinaIcon"><img width="80px" src="'.ReadingsVal($name, "Warn_".$i."_IconURL", "").'"></td>';
+            $ret .= '<td class="NinaIcon"><img width="80px" src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
         }
     } else {
         for ( my $i=0; $i<ReadingsVal($name, "WarnCount", ""); $i++){
-            $ret .= '<td class="NinaIcon"><img width="80px" src="'.ReadingsVal($name, "Warn_".$i."_IconURL", "").'"></td>';
+            $ret .= '<td class="NinaIcon"><img width="80px" src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
         }
     } 
     $ret .= "</tr>";
@@ -1297,7 +1318,7 @@ sub Nina_IntervalAtWarnLevel($) {
     my $hash        = shift;
     
     my $name        = $hash->{NAME};
-    my $warnLevel   = ReadingsVal($name,'WarnNinaLevel',0);
+    my $warnLevel   = ReadingsVal($name,'WarnLevelMax',0);
     my @valuestring = split( ',', AttrVal($name,'intervalAtWarnLevel','') );
     my %warnLevelInterval;
     
@@ -1466,16 +1487,20 @@ sub NinaSearchAreaID($$) {
    <br/>
    Therefore the same interface is used as the official german warn app Nina does.
    A maximum of 30 warnings will be served.
-   The module filters the official warnings checking if the location is within the defined area of a warning. If attr distance is used, area of warnings nearer than distance to location are selected too.
-   Additionally the module provides a few functions to create HTML-Templates which can be used with weblink.(in future versions)
-   <br>
+   The module filters the official warnings checking if the location is within the defined area of a warning. If attr distance is used, warnings with
+   distance between nearest border of warning area and location lower than distance are selected too.
+   Additionally the module provides a few functions to create HTML-Templates which can be used with weblink.(maybe in future versions)<br><br>
+   Technical hint:
+   Most readings are only updated if changed, except "state". Don't expect events, if the reading isn't changed.<br>
+   Events are in general NOT generated for Warn_xy_* readings, except Warn_xy_EventID.
+   <br><br>
    <i>The following Perl-Modules are used within this module: JSON, Encode::Guess </i>.
    <br/><br/>
    <b>Define</b>
    <ul>
       <br>
       <code>define &lt;Name&gt; Nina [CountryCode] [INTERVAL]</code>
-      <br><br><br>
+      <br><br>
       Example:
       <br>
       <code>
@@ -1542,7 +1567,7 @@ sub NinaSearchAreaID($$) {
       </li>
       <li><code>distance</code>
          <br>
-         filter warnings with max. distance to the location. 
+         selects additional warnings of warning areas with distance lower than distance between location and nearest border of warning area. 
          <br>
       </li>
       </li>
