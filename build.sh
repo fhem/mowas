@@ -52,9 +52,12 @@ create_controlfile() {
         out="UPD "$(stat -c %y  $f | cut -d. -f1 | awk '{printf "%s_%s",$1,$2}')" "$(stat -c %s $f)" ${f}"
         echo ${out//.\//} >> ${controls_file}
     done
-    git add ${controls_file}
+
     #Workaround
     cp controls_nina.txt controls_Nina.txt
+
+    git add ${controls_file}
+    git add controls_Nina.txt
 }
 
 update_changed() {
