@@ -61,39 +61,16 @@ my @DEweekdays = qw(Sonntag Montag Dienstag Mittwoch Donnerstag Freitag Samstag)
 my @DEmonths = ( "Januar","Februar","MÃ¤rz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember");
 my @ENweekdays = qw(sunday monday thuesday wednesday thursday friday saturday);
 my @ENmonths = ("January","February","March","April","MÃ¤y","June","July","August","September","October","November","December");
+my @NLweekdays = qw(zondag maandag dinsdag woensdag donderdag vrijdag zaterdag);
+my @NLmonths   = ("januari","februari","maart","april","mei","juni","juli","augustus","september","oktober","november","december");
+my @FRweekdays = qw(dimanche lundi mardi mercredi jeudi vendredi samedi);
+my @FRmonths   = ("janvier","fÃ©vrier","mars","avril","mai","juin","juillet","aoÃ»t","september","octobre","novembre","decembre");
 
 my $MODUL           = "Nina";
-my $version         = "0.1.0";
+my $version         = "0.2.0";
 
 # Declare functions
 sub Nina_Log($$$);
-#sub Nina_Map2Movie($$);
-#sub Nina_Map2Image($$);
-#sub Nina_Initialize($);
-#sub Nina_Define($$);
-#sub Nina_Undef($$);
-#sub Nina_Set($@);
-#sub Nina_Get($@);
-#sub Nina_GetCurrent($@);
-#sub Nina_GetCurrentHail($);
-#sub Nina_JSONAcquire($$);
-#sub Nina_Start($);
-#sub Nina_Aborted($);
-#sub Nina_Done($);
-#sub Nina_Run($);
-#sub NinaAsHtml($;$);
-#sub NinaAsHtmlLite($;$);
-#sub NinaAsHtmlFP($;$);
-#sub NinaAsHtmlMovie($$);
-#sub NinaAsHtmlKarteLand($$);
-#sub Nina_GetSeverityColor($$);
-#sub Nina_GetNinaLevel($$);
-#sub NinaSearchLatLon($$);
-#sub NinaSearchAreaID($$);
-#sub Nina_IntervalAtWarnLevel($);
-
-
-
 
 #my $countrycode = "DE";
 #my $geocode = "05315";
@@ -105,22 +82,16 @@ sub Nina_Initialize($) {
     $hash->{DefFn}    = "Nina_Define";
     $hash->{UndefFn}  = "Nina_Undef";
     $hash->{SetFn}    = "Nina_Set";
-    $hash->{GetFn}    = "Nina_Get";
+#    $hash->{GetFn}    = "Nina_Get";
     $hash->{AttrList} = "disableDWD:0,1 ".
 			"distance:selectnumbers,0,1,99,0,lin ".
-			"download:0,1 ".
-                        "savepath ".
-                        "maps ".
-#                        "humanreadable:0,1 ".
                         "htmlattr ".
                         "htmltitle ".
                         "htmltitleclass ".
                         "htmlsequence:ascending,descending ".
-                        "lang ".
                         "latitude ".
                         "longitude ".
-                        "sort_readings_by:distance,creation,warnlevel ".
-                        "localiconbase ".
+                        "sort_readings_by:distance,creation,severity ".
                         "intervalAtWarnLevel ".
                         "disable:1 ".
                         $readingFnAttributes;
@@ -223,96 +194,18 @@ sub Nina_Set($@) {
     return;
 }
 
-sub Nina_Get($@) {
+#sub Nina_Get($@) {
+#
+#    my ( $hash, @a ) = @_;
+#    my $name    = $hash->{NAME};
+#   
+#    if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
+#        my $usage   = "Unknown argument $a[1], choose one of  ";
+#        return $usage if ( @a < 2 );
+#       
+#    }
+#}
 
-    my ( $hash, @a ) = @_;
-    my $name    = $hash->{NAME};
-   
-    if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-        my $usage   = "Unknown argument $a[1], choose one of Sturm:noArg Schneefall:noArg Regen:noArg Extremfrost:noArg Waldbrand:noArg Gewitter:noArg Glaette:noArg Hitze:noArg Glatteisregen:noArg Bodenfrost:noArg Hagel:noArg ";
-     
-        return $usage if ( @a < 2 );
-       
-        if    ($a[1] =~ /^Sturm/)            { Nina_GetCurrent($hash,2); }
-#        elsif ($a[1] =~ /^Schneefall/)       { Nina_GetCurrent($hash,3); }
-#        elsif ($a[1] =~ /^Regen/)            { Nina_GetCurrent($hash,4); }
-#        elsif ($a[1] =~ /^Extremfrost/)      { Nina_GetCurrent($hash,5); }
-#        elsif ($a[1] =~ /^Waldbrand/)        { Nina_GetCurrent($hash,6); }
-#        elsif ($a[1] =~ /^Gewitter/)         { Nina_GetCurrent($hash,7); }
-#        elsif ($a[1] =~ /^Glaette/)          { Nina_GetCurrent($hash,8); }
-#        elsif ($a[1] =~ /^Hitze/)            { Nina_GetCurrent($hash,9); }
-#        elsif ($a[1] =~ /^Glatteisregen/)    { Nina_GetCurrent($hash,10); }
-#        elsif ($a[1] =~ /^Bodenfrost/)       { Nina_GetCurrent($hash,11); }
-#        elsif ($a[1] =~ /^Hagel/)            { Nina_GetCurrentHail($hash); }
-        else                                 { return $usage; }
-    } else {
-        my $usage   = "Unknown argument $a[1], choose one of storm:noArg snow:noArg rain:noArg extremfrost:noArg forest-fire:noArg thunderstorms:noArg glaze:noArg heat:noArg glazed-rain:noArg soil-frost:noArg hail:noArg ";
-        
-        return $usage if ( @a < 2 );
-    
-        if    ($a[1] =~ /^storm/)            { Nina_GetCurrent($hash,2); }
-#        elsif ($a[1] =~ /^snow/)             { Nina_GetCurrent($hash,3); }
-#        elsif ($a[1] =~ /^rain/)             { Nina_GetCurrent($hash,4); }
-#        elsif ($a[1] =~ /^extremfrost/)      { Nina_GetCurrent($hash,5); }
-#        elsif ($a[1] =~ /^forest-fire/)      { Nina_GetCurrent($hash,6); }
-#        elsif ($a[1] =~ /^thunderstorms/)    { Nina_GetCurrent($hash,7); }
-#        elsif ($a[1] =~ /^glaze/)            { Nina_GetCurrent($hash,8); }
-#        elsif ($a[1] =~ /^heat/)             { Nina_GetCurrent($hash,9); }
-#        elsif ($a[1] =~ /^glazed-rain/)      { Nina_GetCurrent($hash,10); }
-#        elsif ($a[1] =~ /^soil-frost/)       { Nina_GetCurrent($hash,11); }
-#        elsif ($a[1] =~ /^hail/)             { Nina_GetCurrentHail($hash); }
-        else                                 { return $usage; }
-
-    }
-}
-
-###################################
-#####################################
-sub Nina_GetCurrent($@) {
-
-    my ( $hash, @a ) = @_;
-    my $name         = $hash->{NAME};
-    my $out;
-    my $curTimestamp = time();
-    if ( ReadingsVal($name,"WarnCount", 0) eq 0 ) {
-        $out = "inactive";
-    } else {  
-        for(my $i= 0;$i < ReadingsVal($name,"WarnCount", 0);$i++) {
-            if (  (ReadingsVal($name,"Warn_".$i."_Start","") le $curTimestamp) &&  (ReadingsVal($name,"Warn_".$i."_End","") ge $curTimestamp) && (ReadingsVal($name,"Warn_".$i."_Type","") eq $a[0])  ) {
-                $out= "active"; 
-                last;
-            } else {
-                $out = "inactive";
-            }
-        }
-    }
-    
-    return $out;
-}
-
-#####################################
-sub Nina_GetCurrentHail($) {
-
-    my ( $hash ) = @_;
-    my $name         = $hash->{NAME};
-    my $out;
-    my $curTimestamp = time();
-    
-    if ( ReadingsVal($name,"WarnCount", 0) eq 0 ) {
-        $out = "inactive";
-    } else {
-        for(my $i= 0;$i < ReadingsVal($name,"WarnCount", 0);$i++) {
-            if (  (ReadingsVal($name,"Warn_".$i."_Start","") le $curTimestamp) &&  (ReadingsVal($name,"Warn_".$i."_End","") ge $curTimestamp) && (ReadingsVal($name,"Warn_".$i."_Hail","") eq 1)  ) {
-                $out= "active"; 
-                last;
-            } else {
-                $out= "inactive";
-            }
-        }
-    }
-
-    return $out;
-}
 
 #####################################
 sub Nina_Start($) {
@@ -331,14 +224,14 @@ sub Nina_Start($) {
 
     ## URL by CountryCode
     my $URL_language="en";
-    if (AttrVal($hash->{NAME}, "lang", undef) ) {  
-        $URL_language=AttrVal($hash->{NAME}, "lang", "");
-    } else {
+#    if (AttrVal($hash->{NAME}, "lang", undef) ) {  
+#        $URL_language=AttrVal($hash->{NAME}, "lang", "");
+#    } else {
         if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
             $URL_language="de";
         }
-    }
-#    $hash->{URL} =  "http://feed.alertspro.meteogroup.com/AlertsPro/AlertsProPollService.php?method=getWarning&language=" . $URL_language . "&areaID=UWZ" . $hash->{CountryCode} . $hash->{PLZ};
+#    }
+
     $hash->{URL} =  "https://warnung.bund.de/bbk.mowas/gefahrendurchsagen.json";
     
    
@@ -362,9 +255,6 @@ sub Nina_Run($) {
 
     my ($name) = @_;
     my $ptext=$name;
-    my $Nina_download;
-    my $Nina_savepath;
-    my $Nina_humanreadable;
     my $message;
     my $i=0;    # counter for filtered messages
     
@@ -374,58 +264,16 @@ sub Nina_Run($) {
     return unless (defined($hash->{NAME}));
     
     my $readingStartTime = time();
-    my $attrdownload     = AttrVal( $name, 'download','');
-    my $attrsavepath     = AttrVal( $name, 'savepath','');
-    my $maps2fetch       = AttrVal( $name, 'maps','');
-    
-    ## begin redundant Reading switch
-    my $attrhumanreadable = AttrVal( $name, 'humanreadable','');
-    ## end redundant Reading switch
-    
-    # preset download
-    if ($attrdownload eq "") {  
-        $Nina_download = 0;
-    } else {
-        $Nina_download = $attrdownload;
-    }
-    
-    # preset savepath
-    if ($attrsavepath eq "") {
-        $Nina_savepath = "/tmp/";
-    } else {
-        $Nina_savepath = $attrsavepath;
-    }
-    
-    # preset humanreadable
-    if ($attrhumanreadable eq "") {
-        $Nina_humanreadable = 0;
-    } else {
-      $Nina_humanreadable = $attrhumanreadable;
-    }
-
-    if ( $Nina_download == 1 ) {
-        if ( ! defined($maps2fetch) ) { $maps2fetch = "deutschland"; }
-            Nina_Log $hash, 4, "Maps2Fetch : ".$maps2fetch;
-            my @maps = split(' ', $maps2fetch);
-            my $Nina_de_url = "http://www.unwetterzentrale.de/images/map/";
-            foreach my $smap (@maps) {
-                Nina_Log $hash, 4, "Download map : ".$smap;
-                my $img = Nina_Map2Image($hash,$smap);
-                if (!defined($img) ) { $img=$Nina_de_url.'deutschland_index.png'; }
-                my $code = getstore($img, $Nina_savepath.$smap.".png");        
-                if($code == 200) {
-                    Nina_Log $hash, 4, "Successfully downloaded map ".$smap;
-                } else {
-                    Nina_Log $hash, 3, "Failed to download map (".$img.")";
-            	}
-       	} 
-    }
 
     my ($Nina_warnings, @Nina_records, $enc) = "";
+   
+    my %warnlevel = ( "Minor" => "1",
+		      "Moderate" => "2",
+                      "Severe" => "3",
+                      "Extreme" => "4");
 
     # acquire the json-response
     my $response = Nina_JSONAcquire($hash,$hash->{URL}); 					     # MoWaS-Meldungen
-#    my $response = Nina_JSONAcquire($hash,"http://feed.alertspro.meteogroup.com/AlertsPro/AlertsProPollService.php?method=getWarning&language=de&areaID=UWZDE39517"); 
     if (substr($response,0,5) ne "Error") {
     Nina_Log $hash, 5, length($response)." characters captured from Nina:  ".$response;
     $Nina_warnings = JSON->new->ascii->decode($response);
@@ -535,7 +383,7 @@ Nina_Log $hash, 4, "Start Loop of record selection: latitude=$latitude, longitud
 		my ($ii, $flag_warning_in_area)  = (0,0,);# $ii counter for area array
 		Nina_Log $hash, 4, "Record with sender: ".$single_warning->{'sender'};
 		while(defined($single_warning->{'info'}[0]{'area'}[$ii])) {
-			Nina_Log $hash, 4, "       Record with geocode: ".$single_warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'};
+			Nina_Log $hash, 4, "       Record with geocode: ".$single_warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'valueName'};
 			my $iii = 0;  # counter for polygon array within area array
 			while(defined($single_warning->{'info'}[0]{'area'}[$ii]{'polygon'}[$iii]) && !$flag_warning_in_area) {
 				Nina_Log $hash, 5, "       Record with polygon: ".$single_warning->{'info'}[0]{'area'}[$ii]{'polygon'}[$iii];
@@ -550,17 +398,20 @@ Nina_Log $hash, 4, "Start Loop of record selection: latitude=$latitude, longitud
 				else {
 				   if ($dist > 0 && $dist < AttrVal( $name, 'distance',0 ) ) { 
 					Nina_Log $hash, 4, "       warning in distance of $dist km";
-					$single_warning->{'distance'} = $dist if(!defined($single_warning->{'distance'}) || defined($single_warning->{'distance'}) && $dist < $single_warning->{'distance'}); # || $single_warning->{'distance'} == 0);
-					$single_warning->{'area'} = $ii;
+					if(!defined($single_warning->{'distance'}) || defined($single_warning->{'distance'}) && $dist < $single_warning->{'distance'})  { # || $single_warning->{'distance'} == 0);
+					   $single_warning->{'distance'} = $dist;
+					   $single_warning->{'area'} = $ii;
+				   	}
 				   }
 				}
 				$iii++;
 			}
-	Nina_Log $hash, 3, "Severity MoWaS: $single_warning->{'info'}[0]{'severity'} for $single_warning->{'info'}[0]{'area'}[$ii]{'areaDesc'}" if (defined($single_warning->{'info'}[0]{'severity'}) && $single_warning->{'info'}[0]{'severity'} ne "Minor" && defined($single_warning->{'sender'}) && substr($single_warning->{'sender'},4,3) ne "dwd"); 
+#	Nina_Log $hash, 3, "Severity Nina: $single_warning->{'info'}[0]{'severity'} for $single_warning->{'info'}[0]{'area'}[$ii]{'areaDesc'}" if (defined($single_warning->{'info'}[0]{'severity'}) && $single_warning->{'info'}[0]{'severity'} ne "Minor" && defined($single_warning->{'sender'}) && substr($single_warning->{'sender'},4,3) ne "dwd"); 
 			$ii++;
 		}
 		if ($flag_warning_in_area || defined($single_warning->{'distance'})) {
 		  $single_warning->{'sent'} = $single_warning->{'info'}[0]{'onset'} if (defined($single_warning->{'info'}[0]{'onset'}));
+		  $single_warning->{'severity_sort'} =  $warnlevel{$single_warning->{'info'}[0]{'severity'}};
         	  push @Nina_filtered_records, $single_warning;		   
 #		   $message .= Nina_preparemessage($hash,$single_warning,$i,$single_warning->{'area'},$single_warning->{'distance'}) ;
 		   $i++;
@@ -573,9 +424,9 @@ Nina_Log $hash, 4, "Start Loop of record selection: latitude=$latitude, longitud
     if ( $sortby eq "creation" ) {
         Nina_Log $hash, 4, "Sorting by creation";
         @sorted =  sort { $b->{sent} cmp $a->{sent} } @Nina_filtered_records;
-    } elsif ( $sortby eq "warnlevel" ) {
-        Nina_Log $hash, 4, "Sorting by warnlevel";
-        @sorted =  sort { $b->{warnlevel} <=> $a->{warnlevel} } @Nina_filtered_records;
+    } elsif ( $sortby eq "severity" ) {
+        Nina_Log $hash, 4, "Sorting by severity";
+        @sorted =  sort { $b->{severity_sort} <=> $a->{severity_sort} } @Nina_filtered_records;
     } else {
         Nina_Log $hash, 4, "Sorting by distance";
         @sorted =  sort { $a->{distance} <=> $b->{distance} } @Nina_filtered_records;
@@ -583,7 +434,7 @@ Nina_Log $hash, 4, "Start Loop of record selection: latitude=$latitude, longitud
 
 $i = 0;
     foreach my $single_warning (@sorted) {
-       $message .= Nina_preparemessage($hash,$single_warning,$i,$single_warning->{'area'},$single_warning->{'distance'}) ;
+       $message .= Nina_preparemessage($hash,$single_warning,$i,$single_warning->{'area'},$single_warning->{'distance'}) if($i < 30);
 $i++;
     }    
 
@@ -605,6 +456,11 @@ sub Nina_Done($) {
     my ($string) = @_;
     return unless ( defined($string) );
    
+    my %warnlevel = ( "Minor" => "1",
+		      "Moderate" => "2",
+                      "Severe" => "3",
+                      "Extreme" => "4");
+
     # all term are separated by "|" , the first is the name of the instance
     my ( $name, %values ) = split( "\\|", $string );
     my $hash = $defs{$name};
@@ -631,8 +487,11 @@ sub Nina_Done($) {
                   readingsBulkUpdateIfChanged( $hash, $rName, $rValue,1 );    # update of reading with event for _EventID, if changed
 		}
 	       else {
-	           if ($rName =~ m/_Level/) {
-		     $max_level = $rValue if ($rValue gt $max_level );  # max level of warnings
+#	           if ($rName =~ m/_Level/) {
+#		     $max_level = $rValue if ($rValue gt $max_level );  # max level of warnings
+	           if ($rName =~ m/_Severity/) {
+		     my $severity = $warnlevel{$rValue} ;
+		     $max_level = $severity if (defined($severity) && $severity gt $max_level );  # max level of warnings
                	   }
                   readingsBulkUpdateIfChanged( $hash, $rName, $rValue,0 );    # update of reading if changed w/o event
                }
@@ -700,7 +559,8 @@ sub Nina_JSONAcquire($$) {
 		timeout    => 5,
 		hash       => $hash,
 		method     => "GET",
-		header     => "",  
+		header     => "",
+                sslargs => { SSL_version => 'TLSv12' },  
 		};
 
     my ($err, $data) = HttpUtils_BlockingGet($param);
@@ -843,7 +703,7 @@ sub Nina_preparemessage {
 	$message .= Nina_content($hash,"_Sender",$warning->{'sender'},$i) if (defined($warning->{'sender'})); 
 	$message .= Nina_content($hash,"_Severity",$warning->{'info'}[0]{'severity'},$i) if (defined($warning->{'info'}[0]{'severity'})); 
 	$message .= Nina_content($hash,"_End",$warning->{'info'}[0]{'expires'},$i) if (defined($warning->{'info'}[0]{'expires'})); 
-	$message .= Nina_content($hash,"_Geocode",$warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'},$i) if (defined($warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'})); 
+	$message .= Nina_content($hash,"_Geocode",$warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'valueName'},$i) if (defined($warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'value'})); 
 
 	Nina_Log $hash, 2, "Warn_".$i."_status: ".$warning->{'status'} if (defined($warning->{'status'}) && $warning->{'status'} ne "Actual"); 
 	Nina_Log $hash, 2, "Warn_".$i."_scope: ".$warning->{'scope'} if (defined($warning->{'scope'}) && $warning->{'scope'} ne "Public"); 
@@ -852,7 +712,7 @@ sub Nina_preparemessage {
 	Nina_Log $hash, 2, "Warn_".$i."_urgency: ".$warning->{'info'}[0]{'urgency'} if (defined($warning->{'info'}[0]{'urgency'}) && $warning->{'info'}[0]{'urgency'} ne "Immediate" && $warning->{'info'}[0]{'urgency'} ne "Unknown"); 
 # severity bei dwd scheinbar korrespondierend zur Farbe orange=Moderate, rot=Severe, violett=Extreme, Nina: Minor
 	Nina_Log $hash, 2, "Warn_".$i."_severity: ".$warning->{'info'}[0]{'severity'} if (defined($warning->{'info'}[0]{'severity'}) && $warning->{'info'}[0]{'severity'} ne "Severe" && $warning->{'info'}[0]{'severity'} ne "Moderate" && $warning->{'info'}[0]{'severity'} ne "Extreme" && $warning->{'info'}[0]{'severity'} ne "Minor"); 
-	Nina_Log $hash, 2, "Warn_".$i."_responseType: ".$warning->{'info'}[0]{'responseType'} if (defined($warning->{'info'}[0]{'responseType'}) && $warning->{'info'}[0]{'responseType[0]'} ne "Prepare"); 
+	Nina_Log $hash, 2, "Warn_".$i."_responseType: ".$warning->{'info'}[0]{'responseType'}[0] if (defined($warning->{'info'}[0]{'responseType'}[0]) && $warning->{'info'}[0]{'responseType'}[0] ne "Prepare" && $warning->{'info'}[0]{'responseType'}[0] ne "Monitor"); 
 
 #        Nina_Log $hash, 4, "Warn_".$i."_levelName: ".$warning->{'payload'}{'levelName'};
 #        $message .= "Warn_".$i."_levelName|".$warning->{'payload'}{'levelName'}."|";
@@ -874,14 +734,18 @@ sub Nina_preparemessage {
 	$message .= Nina_content($hash,"_Contact",$warning->{'info'}[0]{'contact'},$i) if (defined($warning->{'info'}[0]{'contact'})); 
 	$message .= Nina_content($hash,"_Area",$warning->{'info'}[0]{'area'}[$ii]{'areaDesc'},$i) if (defined($warning->{'info'}[0]{'area'}[$ii]{'areaDesc'})); 
 	$message .= Nina_content($hash,"_Instruction",$warning->{'info'}[0]{'instruction'},$i) if (defined($warning->{'info'}[0]{'instruction'})); 
-	$message .= Nina_content($hash,"_ShortText",$warning->{'info'}[0]{'headline'},$i) if (defined($warning->{'info'}[0]{'headline'})); 
 	$message .= Nina_content($hash,"_LongText",$warning->{'info'}[0]{'description'},$i) if (defined($warning->{'info'}[0]{'description'})); 
 
-	my $event = $warning->{'info'}[0]{'event'} if (defined($warning->{'info'}[0]{'event'})); 
+	my $event, my $shorttext = "";
+	$event = $warning->{'info'}[0]{'event'} if (defined($warning->{'info'}[0]{'event'})); 
+	$shorttext = $warning->{'info'}[0]{'headline'} if (defined($warning->{'info'}[0]{'headline'}));
+#	$shorttext .= " ".$warning->{'info'}[0]{'web'} if (defined($warning->{'info'}[0]{'web'}));
+	$message .= Nina_content($hash,"_ShortText",$shorttext,$i) if (defined($shorttext));
+        $message .= Nina_content($hash,"_MsgType",$warning->{'msgType'},$i) if (defined($warning->{'msgType'}));
 
 	if (defined($warning->{'sender'}) && substr($warning->{'sender'},4,3) ne "dwd") {
 	   $message .= Nina_content($hash,"_Sendername",$warning->{'info'}[0]{'parameter'}[0]{'value'},$i) if (defined($warning->{'info'}[0]{'parameter'}[0]{'value'})); 
-	   $message .= Nina_content($hash,"_Level",$warnlevel{$warning->{'msgType'}},$i) if (defined($warning->{'msgType'}));
+#	   $message .= Nina_content($hash,"_Level",$warnlevel{$warning->{'msgType'}},$i) if (defined($warning->{'msgType'}));
 	} 
 	else {
 	   $message .= Nina_content($hash,"_Sendername",$warning->{'info'}[0]{'senderName'},$i); 
@@ -890,7 +754,7 @@ sub Nina_preparemessage {
 	 	if($warning->{'info'}[0]{'eventCode'}[$Counter]{'valueName'} eq "AREA_COLOR") {
 		   my $color_text = $color{$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'}};
 		   $message .= Nina_content($hash,"_Color",$color_text,$i);
-		   $message .= Nina_content($hash,"_Level",$warnlevel{$color_text},$i);
+#		   $message .= Nina_content($hash,"_Level",$warnlevel{$color_text},$i);
 	    	}
 	 	elsif($warning->{'info'}[0]{'eventCode'}[$Counter]{'valueName'} eq "GROUP") {
 		   $event .= ", ".$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'};
@@ -898,7 +762,7 @@ sub Nina_preparemessage {
 	    }
 	} 
 	
-	$message .= Nina_content($hash,"_Event",$event,$i); 
+	$message .= Nina_content($hash,"_Event",$event,$i) if (defined($event));
 
 	return $message;
 					
@@ -936,164 +800,95 @@ sub Nina_Log($$$) {
     Log3 $instName, $loglevel, "$MODUL $instName: $sub.$xline " . $text;
 }
 
-########################################
-sub Nina_Map2Movie($$) {
-    my $Nina_movie_url = "http://www.meteocentrale.ch/uploads/media/";
-    my ( $hash, $smap ) = @_;
-    my $lmap;
+# /assets/images/icons/ic_unwetter_weiss.png  /assets/images/icons/ic_hochwasser_weiss.png /assets/images/icons/notfalltipps.png /assets/images/icons/kontakt.png /assets/images/icons/notfalltipps-w.png /assets/images/icons/ic_mowa.png /assets/images/icons/dwd_logo.png
+#                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="http://www.unwetterzentrale.de/images/icons/gewitter-gelb.gif"></td>';
+#               $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.'https://warnung.bund.de/assets/images/icons/ic_hochwasser_weiss.png'.'"></td>';
 
-    $smap=lc($smap);
-
-    ## Euro
-    $lmap->{'niederschlag-wolken'}=$Nina_movie_url.'Nina_EUROPE_COMPLETE_niwofi.mp4';
-    $lmap->{'stroemung'}=$Nina_movie_url.'Nina_EUROPE_COMPLETE_stfi.mp4';
-    $lmap->{'temperatur'}=$Nina_movie_url.'Nina_EUROPE_COMPLETE_theta_E.mp4';
-
-    ## DE
-    $lmap->{'niederschlag-wolken-de'}=$Nina_movie_url.'Nina_EUROPE_GERMANY_COMPLETE_niwofi.mp4';
-    $lmap->{'stroemung-de'}=$Nina_movie_url.'Nina_EUROPE_GERMANY_COMPLETE_stfi.mp4';
-
-    return $lmap->{$smap};
-}
-
-########################################
-sub Nina_Map2Image($$) {
-
-    my $Nina_de_url = "http://www.unwetterzentrale.de/images/map/";
-
-    my ( $hash, $smap ) = @_;
-    my $lmap;
-    
-    $smap=lc($smap);
-
-    ## Euro
-    $lmap->{'europa'}=$Nina_de_url.'europe_index.png';
-
-    ## DE
-    $lmap->{'deutschland'}=$Nina_de_url.'deutschland_index.png';
-    $lmap->{'deutschland-small'}=$Nina_de_url.'deutschland_preview.png';
-    $lmap->{'niedersachsen'}=$Nina_de_url.'niedersachsen_index.png';
-    $lmap->{'bremen'}=$Nina_de_url.'niedersachsen_index.png';
-    $lmap->{'bayern'}=$Nina_de_url.'bayern_index.png';
-    $lmap->{'schleswig-holstein'}=$Nina_de_url.'schleswig_index.png';
-    $lmap->{'hamburg'}=$Nina_de_url.'schleswig_index.png';
-    $lmap->{'mecklenburg-vorpommern'}=$Nina_de_url.'meckpom_index.png';
-    $lmap->{'sachsen'}=$Nina_de_url.'sachsen_index.png';
-    $lmap->{'sachsen-anhalt'}=$Nina_de_url.'sachsenanhalt_index.png';
-    $lmap->{'nordrhein-westfalen'}=$Nina_de_url.'nrw_index.png';
-    $lmap->{'thueringen'}=$Nina_de_url.'thueringen_index.png';
-    $lmap->{'rheinland-pfalz'}=$Nina_de_url.'rlp_index.png';
-    $lmap->{'saarland'}=$Nina_de_url.'rlp_index.png';
-    $lmap->{'baden-wuerttemberg'}=$Nina_de_url.'badenwuerttemberg_index.png';
-    $lmap->{'hessen'}=$Nina_de_url.'hessen_index.png';
-    $lmap->{'brandenburg'}=$Nina_de_url.'brandenburg_index.png';
-    $lmap->{'berlin'}=$Nina_de_url.'brandenburg_index.png';
-
-    ## Isobaren
-    $lmap->{'isobaren1'}="http://www.unwetterzentrale.de/images/icons/Nina_ISO_00.jpg";
-    $lmap->{'isobaren2'}="http://www.wetteralarm.at/uploads/pics/Nina_EURO_ISO_GER_00.jpg";
-    $lmap->{'isobaren3'}="http://www.severe-weather-centre.co.uk/uploads/pics/Nina_EURO_ISO_ENG_00.jpg";
-
-    return $lmap->{$smap};
-}
 
 #####################################
 sub NinaAsHtml($;$) {
 
-    my ($name,$items) = @_;
-    my $ret = '';
-    my $hash = $defs{$name};    
+    my ( $name, $items ) = @_;
+    my $ret  = '';
+    my $hash = $defs{$name};
 
-    my $htmlsequence = AttrVal($name, "htmlsequence", "none");
-    my $htmltitle = AttrVal($name, "htmltitle", "");
-    my $htmltitleclass = AttrVal($name, "htmltitleclass", "");
-
+    my $htmlsequence   = AttrVal( $name, "htmlsequence",   "none" );
+    my $htmltitle      = AttrVal( $name, "htmltitle",      "" );
+    my $htmltitleclass = AttrVal( $name, "htmltitleclass", "" );
 
     my $attr;
-    if (AttrVal($name, "htmlattr", "none") ne "none") {
-        $attr = AttrVal($name, "htmlattr", "");
-    } else {
+    if ( AttrVal( $name, "htmlattr", "none" ) ne "none" ) {
+        $attr = AttrVal( $name, "htmlattr", "" );
+    }
+    else {
         $attr = 'width="100%"';
     }
 
+    if ( ReadingsVal( $name, "WarnCount", 0 ) != 0 ) {
 
-    if (ReadingsVal($name, "WarnCount", 0) != 0 ) {
         $ret .= '<table><tr><td>';
-        $ret .= '<table class="block" '.$attr.'><tr><th class="'.$htmltitleclass.'" colspan="2">'.$htmltitle.'</th></tr>';
-        if ($htmlsequence eq "descending") {
-            for ( my $i=ReadingsVal($name, "WarnCount", -1)-1; $i>=0; $i--){
-                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
-                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_0".$i."_ShortText", "").'</b><br><br>';
-                $ret .= ReadingsVal($name, "Warn_0".$i."_LongText", "").'<br><br>';
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_Start", ""));
-                if (length($hour) == 1) {$hour = "0$hour";}
-                if (length($min) == 1) {$min = "0$min";}
-                # language by AttrVal
-                                if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                        $ret .= '<table '.$attr.'><tr><th></th><th></th></tr><tr><td><b>Anfang:</b></td><td>'."$DEweekdays[$wday], $mday $DEmonths[$mon] ".(1900+$year)." $hour:$min ".'Uhr</td>';
-                                } else {
-                                $ret .= '<table '.$attr.'><tr><th></th><th></th></tr><tr><td><b>Start:</b></td><td>'."$ENweekdays[$wday], $mday $ENmonths[$mon] ".(1900+$year)." $hour:$min ".'hour</td>';
-                }
-                # end language by AttrVal
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = undef;
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_End", ""));
-                if (length($hour) == 1) {$hour = "0$hour";}
-                if (length($min) == 1) {$min = "0$min";}
-                # language by AttrVal
-                if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                    $ret .= '<td><b>Ende:</b></td><td>'."$DEweekdays[$wday], $mday $DEmonths[$mon] ".(1900+$year)." $hour:$min ".'Uhr</td>';
-                } else {
-                    $ret .= '<td><b>End:</b></td><td>'."$ENweekdays[$wday], $mday $ENmonths[$mon] ".(1900+$year)." $hour:$min ".'hour</td>';
-                }
-                # end language by AttrVal
-                $ret .= '</tr></table>';
-                $ret .= '</td></tr>';
-            }
-        } else {
-###        
-            for ( my $i=0; $i<ReadingsVal($name, "WarnCount", 0); $i++){
-                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
-                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_0".$i."_ShortText", "").'</b><br><br>';
-                $ret .= ReadingsVal($name, "Warn_0".$i."_LongText", "").'<br><br>';
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_Start", ""));
-                if (length($hour) == 1) {$hour = "0$hour";}
-                if (length($min) == 1) {$min = "0$min";}
-                # language by AttrVal
-                if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                   $ret .= '<table '.$attr.'><tr><th></th><th></th></tr><tr><td><b>Anfang:</b></td><td>'."$DEweekdays[$wday], $mday $DEmonths[$mon] ".(1900+$year)." $hour:$min ".'Uhr</td>';
-                } else {
-                   $ret .= '<table '.$attr.'><tr><th></th><th></th></tr><tr><td><b>Start:</b></td><td>'."$ENweekdays[$wday], $mday $ENmonths[$mon] ".(1900+$year)." $hour:$min ".'hour</td>';
-                }
-                # end language by AttrVal
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = undef;
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_End", ""));
-                if (length($hour) == 1) {$hour = "0$hour";}
-                if (length($min) == 1) {$min = "0$min";}
-                # language by AttrVal
-                if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                    $ret .= '<td><b>Ende:</b></td><td>'."$DEweekdays[$wday], $mday $DEmonths[$mon] ".(1900+$year)." $hour:$min ".'Uhr</td>';
-                } else {
-                    $ret .= '<td><b>End:</b></td><td>'."$ENweekdays[$wday], $mday $ENmonths[$mon] ".(1900+$year)." $hour:$min ".'hour</td>';
-                }
-                # end language by AttrVal
-                $ret .= '</tr></table>';
-                $ret .= '</td></tr>';
+        $ret .=
+            '<table class="block" '
+          . $attr
+          . '><tr><th class="'
+          . $htmltitleclass
+          . '" colspan="2">'
+          . $htmltitle
+          . '</th></tr>';
+
+        if ( $htmlsequence eq "descending" ) {
+            for (
+                my $i = ReadingsVal( $name, "WarnCount", -1 ) - 1 ;
+                $i >= 0 ;
+                $i--
+              )
+            {
+                $ret .= NinaHtmlFrame($hash,"Warn_" . $i,$attr,1) if($i > 9);
+                $ret .= NinaHtmlFrame($hash,"Warn_0" . $i,$attr,1) if($i < 10);
+
+			}
+        }
+        else {
+###
+            for ( my $i = 0 ; $i < ReadingsVal( $name, "WarnCount", 0 ) ; $i++ )
+            {
+
+                $ret .= NinaHtmlFrame($hash,"Warn_" . $i,$attr,1) if($i > 9);
+                $ret .= NinaHtmlFrame($hash,"Warn_0" . $i,$attr,1) if($i < 10);
             }
         }
 ###
+
         $ret .= '</table>';
         $ret .= '</td></tr>';
         $ret .= '</table>';
-    } else {
+
+    }
+    else {
+
         $ret .= '<table><tr><td>';
-        $ret .= '<table class="block wide" width="600px"><tr><th class="'.$htmltitleclass.'" colspan="2">'.$htmltitle.'</th></tr>';
+        $ret .=
+            '<table class="block wide" width="600px"><tr><th class="'
+          . $htmltitleclass
+          . '" colspan="2">'
+          . $htmltitle
+          . '</th></tr>';
         $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;">';
+
         # language by AttrVal
-        if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-            $ret .='<b>Keine Warnungen</b>';
-        } else {
-            $ret .='<b>No Warnings</b>';
+        if ( $hash->{CountryCode} ~~ [ 'DE', 'AT', 'CH' ] ) {
+            $ret .= '<b>Keine Warnungen</b>';
         }
+        elsif ( $hash->{CountryCode} ~~ ['NL'] ) {
+            $ret .= '<b>Geen waarschuwingen</b>';
+        }
+        elsif ( $hash->{CountryCode} ~~ ['FR'] ) {
+            $ret .= '<b>Aucune alerte</b>';
+        }
+        else {
+            $ret .= '<b>No Warnings</b>';
+        }
+
         # end language by AttrVal
         $ret .= '</td></tr>';
         $ret .= '</table>';
@@ -1107,96 +902,82 @@ sub NinaAsHtml($;$) {
 #####################################
 sub NinaAsHtmlLite($;$) {
 
-    my ($name,$items) = @_;
-    my $ret = '';
-    my $hash = $defs{$name}; 
-    my $htmlsequence = AttrVal($name, "htmlsequence", "none");
-    my $htmltitle = AttrVal($name, "htmltitle", "");
-    my $htmltitleclass = AttrVal($name, "htmltitleclass", "");
+    my ( $name, $items ) = @_;
+    my $ret            = '';
+    my $hash           = $defs{$name};
+    my $htmlsequence   = AttrVal( $name, "htmlsequence", "none" );
+    my $htmltitle      = AttrVal( $name, "htmltitle", "" );
+    my $htmltitleclass = AttrVal( $name, "htmltitleclass", "" );
     my $attr;
-    
-    if (AttrVal($name, "htmlattr", "none") ne "none") {
-        $attr = AttrVal($name, "htmlattr", "");
-    } else {
+
+    if ( AttrVal( $name, "htmlattr", "none" ) ne "none" ) {
+        $attr = AttrVal( $name, "htmlattr", "" );
+    }
+    else {
         $attr = 'width="100%"';
     }
-    
-    if (ReadingsVal($name, "WarnCount", "") != 0 ) {
+
+    if ( ReadingsVal( $name, "WarnCount", "" ) != 0 ) {
 
         $ret .= '<table><tr><td>';
-        $ret .= '<table class="block" '.$attr.'><tr><th class="'.$htmltitleclass.'" colspan="2">'.$htmltitle.'</th></tr>';
-        if ($htmlsequence eq "descending") {
-            for ( my $i=ReadingsVal($name, "WarnCount", "")-1; $i>=0; $i--){
-# /assets/images/icons/ic_unwetter_weiss.png  /assets/images/icons/ic_hochwasser_weiss.png /assets/images/icons/notfalltipps.png /assets/images/icons/kontakt.png /assets/images/icons/notfalltipps-w.png /assets/images/icons/ic_mowa.png /assets/images/icons/dwd_logo.png
-#                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="http://warnung.bund.de/bbk.webapp/assets/images/Schutzzeichen_share.png"></td>';
-                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
-                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_0".$i."_ShortText", "").'</b><br><br>';
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_Start", ""));
-                if (length($hour) == 1) {$hour = "0$hour";}
-                if (length($min) == 1) {$min = "0$min";}
-                # language by AttrVal
-                if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                   $ret .= '<table '.$attr.'><tr><th></th><th></th></tr><tr><td><b>Anfang:</b></td><td>'."$DEweekdays[$wday], $mday $DEmonths[$mon] ".(1900+$year)." $hour:$min ".'Uhr</td>';
-                } else {
-                   $ret .= '<table '.$attr.'><tr><th></th><th></th></tr><tr><td><b>Start:</b></td><td>'."$ENweekdays[$wday], $mday $ENmonths[$mon] ".(1900+$year)." $hour:$min ".'hour</td>';
-                }
-# end language by AttrVal
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = undef;
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_End", ""));
-                if (length($hour) == 1) {$hour = "0$hour";}
-                if (length($min) == 1) {$min = "0$min";}
-                # language by AttrVal
-                if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                    $ret .= '<td><b>Ende:</b></td><td>'."$DEweekdays[$wday], $mday $DEmonths[$mon] ".(1900+$year)." $hour:$min ".'Uhr</td>';
-                } else {
-                    $ret .= '<td><b>End:</b></td><td>'."$ENweekdays[$wday], $mday $ENmonths[$mon] ".(1900+$year)." $hour:$min ".'hour</td>';
-                }
-                # end language by AttrVal
-                $ret .= '</tr></table>';
-                $ret .= '</td></tr>';
+        $ret .=
+            '<table class="block" '
+          . $attr
+          . '><tr><th class="'
+          . $htmltitleclass
+          . '" colspan="2">'
+          . $htmltitle
+          . '</th></tr>';
+
+        if ( $htmlsequence eq "descending" ) {
+            for (
+                my $i = ReadingsVal( $name, "WarnCount", "" ) - 1 ;
+                $i >= 0 ;
+                $i--
+              )
+            {
+                $ret .= NinaHtmlFrame($hash,"Warn_" . $i,$attr,0) if($i > 9);
+                $ret .= NinaHtmlFrame($hash,"Warn_0" . $i,$attr,0) if($i < 10);
             }
-        } else {
-            for ( my $i=0; $i<ReadingsVal($name, "WarnCount", ""); $i++){
-                $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;"><img src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
-                $ret .= '<td class="NinaValue"><b>'.ReadingsVal($name, "Warn_0".$i."_ShortText", "").'</b><br><br>';
-                my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_Start", ""));
-                if (length($hour) == 1) {$hour = "0$hour";}
-                if (length($min) == 1) {$min = "0$min";}
-                # language by AttrVal
-                if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                   $ret .= '<table '.$attr.'><tr><th></th><th></th></tr><tr><td><b>Anfang:</b></td><td>'."$DEweekdays[$wday], $mday $DEmonths[$mon] ".(1900+$year)." $hour:$min ".'Uhr</td>';
-                } else {
-                   $ret .= '<table '.$attr.'><tr><th></th><th></th></tr><tr><td><b>Start:</b></td><td>'."$ENweekdays[$wday], $mday $ENmonths[$mon] ".(1900+$year)." $hour:$min ".'hour</td>';
-                }
-                # end language by AttrVal
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = undef;
-                ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(ReadingsVal($name, "Warn_0".$i."_End", ""));
-                if (length($hour) == 1) {$hour = "0$hour";}
-                if (length($min) == 1) {$min = "0$min";}
-                # language by AttrVal
-                if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-                    $ret .= '<td><b>Ende:</b></td><td>'."$DEweekdays[$wday], $mday $DEmonths[$mon] ".(1900+$year)." $hour:$min ".'Uhr</td>';
-                } else {
-                    $ret .= '<td><b>End:</b></td><td>'."$ENweekdays[$wday], $mday $ENmonths[$mon] ".(1900+$year)." $hour:$min ".'hour</td>';
-                }
-                # end language by AttrVal
-                $ret .= '</tr></table>';
-                $ret .= '</td></tr>';
+        }
+        else {
+            for ( my $i = 0 ;
+                $i < ReadingsVal( $name, "WarnCount", "" ) ; $i++ )
+            {
+                $ret .= NinaHtmlFrame($hash,"Warn_" . $i,$attr,0) if($i > 9);
+                $ret .= NinaHtmlFrame($hash,"Warn_0" . $i,$attr,0) if($i < 10);
             }
-        }    
+        }
         $ret .= '</table>';
         $ret .= '</td></tr>';
         $ret .= '</table>';
-    } else {
+
+    }
+    else {
+
         $ret .= '<table><tr><td>';
-        $ret .= '<table class="block wide" width="600px"><tr><th class="'.$htmltitleclass.'" colspan="2">'.$htmltitle.'</th></tr>';
+        $ret .=
+            '<table class="block wide" width="600px"><tr><th class="'
+          . $htmltitleclass
+          . '" colspan="2">'
+          . $htmltitle
+          . '</th></tr>';
         $ret .= '<tr><td class="NinaIcon" style="vertical-align:top;">';
+
         # language by AttrVal
-        if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-            $ret .='<b>Keine Warnungen</b>';
-        } else {
-            $ret .='<b>No Warnings</b>';
+        if ( $hash->{CountryCode} ~~ [ 'DE', 'AT', 'CH' ] ) {
+            $ret .= '<b>Keine Warnungen</b>';
         }
+        elsif ( $hash->{CountryCode} ~~ ['NL'] ) {
+            $ret .= '<b>Geen waarschuwingen</b>';
+        }
+        elsif ( $hash->{CountryCode} ~~ ['FR'] ) {
+            $ret .= '<b>Aucune alerte</b>';
+        }
+        else {
+            $ret .= '<b>No Warnings</b>';
+        }
+
         # end language by AttrVal
         $ret .= '</td></tr>';
         $ret .= '</table>';
@@ -1208,108 +989,95 @@ sub NinaAsHtmlLite($;$) {
 }
 
 #####################################
-sub NinaAsHtmlFP($;$) {
+sub NinaHtmlFrame($$$$) {
 
-    my ($name,$items) = @_;
-    my $tablewidth = ReadingsVal($name, "WarnCount", "") * 80;
-    my $htmlsequence = AttrVal($name, "htmlsequence", "none");
-    my $htmltitle = AttrVal($name, "htmltitle", "");
-    my $htmltitleclass = AttrVal($name, "htmltitleclass", "");
-    my $ret = '';
-    
-    $ret .= '<table class="Nina-fp" style="width:'.$tablewidth.'px"><tr><th class="'.$htmltitleclass.'" colspan="'.ReadingsVal($name, "WarnCount", "none").'">'.$htmltitle.'</th></tr>';
-    $ret .= "<tr>";
-    
-    if ($htmlsequence eq "descending") {
-        for ( my $i=ReadingsVal($name, "WarnCount", "")-1; $i>=0; $i--){
-            $ret .= '<td class="NinaIcon"><img width="80px" src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
-        }
-    } else {
-        for ( my $i=0; $i<ReadingsVal($name, "WarnCount", ""); $i++){
-            $ret .= '<td class="NinaIcon"><img width="80px" src="'.ReadingsVal($name, "Warn_0".$i."_IconURL", "").'"></td>';
-        }
-    } 
-    $ret .= "</tr>";
-    $ret .= '</table>';
+    my %severitycolor   = ( "Minor" => "yellow", 
+                            "Moderate" => "orange",
+                            "Severe" => "red",
+                            "Extreme" => "fuchsia" );
+my %icon_tab = ( "CAP\@hochwasserzentralen.de" => "https://warnung.bund.de/assets/images/icons/ic_hochwasser_weiss.png", 
+                 "CAP\@dwd.de" => "https://warnung.bund.de/assets/images/icons/ic_unwetter_weiss.png" );
 
-    return $ret;
+		my ($hash,$readingStart,$attr,$parm) = @_;
+
+		my $ret = "";
+		my $name = $hash->{NAME};
+ my $icon = $icon_tab{ReadingsVal( $name, $readingStart . "_Sender", "")};
+ $icon = "https://warnung.bund.de/assets/images/icons/ic_mowa_weiss.png" if(!defined($icon));
+ my $iconcolor = "";
+  $iconcolor = $severitycolor{ReadingsVal( $name, $readingStart . "_Severity", "")} if(ReadingsVal( $name, $readingStart . "_MsgType", "") ne "Cancel");
+
+		$ret .=
+'<tr><td class="NinaIcon" style="vertical-align:top;padding: 15px; background-color: '
+		. $iconcolor
+		. ';height : 50px"><img src="'
+#		  . ReadingsVal( $name, $readingStart . "_IconURL", "" )
+               . $icon
+		  . '"></td>';
+		$ret .=
+			'<td class="NinaValue"><b>'
+		  . ReadingsVal( $name, $readingStart . "_ShortText", "" )
+		  . '</b><br><br>';
+		$ret .= ReadingsVal( $name, $readingStart . "_LongText", "" )
+		  . '<br><br>' if($parm);
+
+		$ret .= NinaHtmlTimestamp($hash,$readingStart . "_Creation",$attr);
+		$ret .= NinaHtmlTimestamp($hash,$readingStart . "_End",$attr);
+		$ret .= '</tr></table>';
+		$ret .= '</td></tr>';
+
+		return $ret;
+
 }
 
 #####################################
-sub NinaAsHtmlMovie($$) {
+sub NinaHtmlTimestamp($$$) {
 
-    my ($name,$land) = @_;
-    my $url = Nina_Map2Movie($name,$land);
-    my $hash = $defs{$name};
+my @DEText = qw(Anfang: Ende: Uhr);
+my @NLText = qw(Begin: Einde: uur);
+my @FRText = ("Valide Ã  partir du:", "Jusqu\'au:", "heure");
+my @ENText = qw(Start: End: hour);
 
-    my $ret = '<table><tr><td>';
+my ($hash,$reading,$attr) = @_;
 
-    $ret .= '<table class="block wide">';
-    $ret .= '<tr class="even"><td>';
+				 my $ret, my $StartEnd = "";
+				 my $name = $hash->{NAME};
+				 
+				if (substr($reading,8,1) eq "C") {
+				$StartEnd = 0;
+				$ret .=
+                        '<table '
+                      . $attr
+					  . '><tr><th></th><th></th></tr><tr>';
+			}
+			else {
+				$StartEnd = 1;
+			}
 
-    if(defined($url)) {
-        $ret .= '<video controls="controls">';
-        $ret .= '<source src="'.$url.'" type="video/mp4">';
-        $ret .= '</video>';
-    } else {
-        # language by AttrVal
-        if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-            $ret .= 'unbekannte Landbezeichnung';
-        } else {
-            $ret .='unknown movie setting';
-        }
-        # end language by AttrVal
-    }
 
-    $ret .= '</td></tr></table></td></tr>';
-    $ret .= '</table>';
+                # language by AttrVal
+                if ( $hash->{CountryCode} ~~ [ 'DE', 'AT', 'CH' ] ) {
+                    $ret .=
+                        "<td><b>$DEText[$StartEnd]</b></td><td>";
+                }
+                elsif ( $hash->{CountryCode} ~~ ['NL'] ) {
+                    $ret .=
+                        "<td><b>$NLText[$StartEnd]</b></td><td>";
+                }
+                elsif ( $hash->{CountryCode} ~~ ['FR'] ) {
+                    $ret .=
+                        "<td><b>$FRText[$StartEnd]</b></td><td>";
+                }
+                else {
+                    $ret .=
+                        "<td><b>$ENText[$StartEnd]</b></td><td>";
+                }
+                $ret .= ReadingsVal( $name, $reading, "" ) 
+                      . "</td>";		      
+				return $ret;
 
-    return $ret;
 }
 
-#####################################
-sub NinaAsHtmlKarteLand($$) {
-
-    my ($name,$land) = @_;
-    my $url = Nina_Map2Image($name,$land);
-    my $hash = $defs{$name};
-
-    my $ret = '<table><tr><td>';
-    
-    $ret .= '<table class="block wide">';
-    $ret .= '<tr class="even"><td>';
-    
-    if(defined($url)) {
-        $ret .= '<img src="'.$url.'">';
-    } else {
-        # language by AttrVal
-        if ( $hash->{CountryCode} ~~ [ 'DE' ] ) {
-            $ret .= 'unbekannte Landbezeichnung';
-        } else {
-            $ret .='unknown map setting';
-        }       
-        # end language by AttrVal
-    }
-    
-    $ret .= '</td></tr></table></td></tr>';
-    $ret .= '</table>';
-    
-    return $ret;
-}
-
-#####################################
-sub Nina_GetSeverityColor($$) {
-    my ($name,$Ninalevel) = @_;
-    my $alertcolor       = "";
-
-    my %NinaSeverity = ( "0" => "green",
-                            "1" => "orange",
-                            "2" => "yellow",
-                            "3" => "red",
-                            "4" => "violet");
-
-    return $NinaSeverity{$Ninalevel};
-}
 
 
 #####################################
@@ -1342,125 +1110,6 @@ sub Nina_IntervalAtWarnLevel($) {
     }
 }
 
-#####################################
-##
-##      Nina Helper Functions
-##
-#####################################
-
-sub NinaSearchLatLon($$) {
-
-    my ($name,$loc)    = @_;
-    my $url      = "http://alertspro.geoservice.meteogroup.de/weatherpro/SearchFeed.php?search=".$loc;
-
-#    my $agent    = LWP::UserAgent->new( env_proxy => 1, keep_alive => 1, protocols_allowed => ['http'], timeout => 10 );
-#    my $request  = HTTP::Request->new( GET => $url );
-#    my $response = $agent->request($request);
-#    my $err_log  = "Can't get $url -- " . $response->status_line unless( $response->is_success );
-
-#    if ( $err_log ne "" ) {
-#        print "Error|Error " . $response->status_line;
-#    }
-    
-    use XML::Simple qw(:strict);
-    use Data::Dumper;
-    use Encode qw(decode encode);
-
-    my $Ninaxmlparser = XML::Simple->new();
-    #my $xmlres = $parser->XMLin(
-    my $search = ""; #$Ninaxmlparser->XMLin($response->content, KeyAttr => { city => 'id' }, ForceArray => [ 'city' ]);
-
-    my $ret = '<html><table><tr><td>';
-
-    $ret .= '<table class="block wide">';
-
-            $ret .= '<tr class="even">';
-            $ret .= "<td><b>city</b></td>";
-            $ret .= "<td><b>country</b></td>";
-            $ret .= "<td><b>latitude</b></td>";
-            $ret .= "<td><b>longitude</b></td>";
-            $ret .= '</tr>';
-
-    foreach my $locres ($search->{cities}->{city})
-        {
-            my $linecount=1;
-            while ( my ($key, $value) = each(%$locres) ) {
-                if ( $linecount % 2 == 0 ) {
-                    $ret .= '<tr class="even">';
-                } else {
-                    $ret .= '<tr class="odd">';
-                }
-                $ret .= "<td>".encode('utf-8',$value->{'name'})."</td>";
-                $ret .= "<td>$value->{'country-name'}</td>";
-                $ret .= "<td>$value->{'latitude'}</td>";
-                $ret .= "<td>$value->{'longitude'}</td>";
-
-                my @headerHost = grep /Host/, @FW_httpheader;
-                $headerHost[0] =~ s/Host: //g; 
- 
-                my $aHref="<a href=\"http://".$headerHost[0]."/fhem?cmd=get+".$name."+AreaID+".$value->{'latitude'}.",".$value->{'longitude'}."\">Get AreaID</a>";
-                $ret .= "<td>".$aHref."</td>";
-                $ret .= '</tr>';
-                $linecount++;
-            }
-        }
-        
-    $ret .= '</table></td></tr>';
-    $ret .= '</table></html>';
-
-    return $ret;
-
-}
-
-#####################################
-sub NinaSearchAreaID($$) {
-    my ($lat,$lon) = @_;
-    my $url = "http://feed.alertspro.meteogroup.com/AlertsPro/AlertsProPollService.php?method=lookupCoord&lat=".$lat."&lon=".$lon;
-    
-#    my $agent    = LWP::UserAgent->new( env_proxy => 1, keep_alive => 1, protocols_allowed => ['http'], timeout => 10 );
-#    my $request   = HTTP::Request->new( GET => $url );
-#    my $response = $agent->request($request);
-#    my $err_log = "Can't get $url -- " . $response->status_line unless( $response->is_success );
-
-#    if ( $err_log ne "" ) {
-#        print "Error|Error " . $response->status_line;
-#    }
-    use JSON;
-    my @perl_scalar = ""; #@{JSON->new->utf8->decode($response->content)};
-
-
-    my $AreaType = $perl_scalar[0]->{'AREA_TYPE'};
-    my $CC       = substr $perl_scalar[0]->{'AREA_ID'}, 3, 2;
-    my $AreaID   = substr $perl_scalar[0]->{'AREA_ID'}, 5, 5;   
-
-    if ( $AreaType eq "Nina" ) {
-        my $ret = '<html>Please use the following statement to define Unwetterzentrale for your location:<br /><br />';
-        $ret   .= '<table width=100%><tr><td>';
-        $ret   .= '<table class="block wide">';
-        $ret   .= '<tr class="even">';
-        $ret   .= "<td height=100><center><b>define Unwetterzentrale Nina $CC $AreaID 3600</b></center></td>";
-        $ret   .= '</tr>';
-        $ret   .= '</table>';
-        $ret   .= '</td></tr></table>';
-    
-        $ret   .= '<br />';
-        $ret   .= 'You can also use weblinks to add weathermaps. For a list of possible Weblinks see Commandref. For example to add the Europe Map use:<br />';
-    
-        $ret   .= '<table width=100%><tr><td>';
-        $ret   .= '<table class="block wide">';
-        $ret   .= '<tr class="even">';
-        $ret   .= "<td height=100><center>define Nina_Map_Europe weblink htmlCode { NinaAsHtmlKarteLand('Unwetterzentrale','europa') }</center></td>";
-        $ret   .= '</tr>';
-        $ret   .= '</table>';
-        $ret   .= '</td></tr></table>';
-    
-        $ret   .= '</html>';
-     
-        return $ret;
-    } else {
-        return "Sorry, nothing found or not implemented";
-    }
-}
 
 
 
@@ -1489,7 +1138,7 @@ sub NinaSearchAreaID($$) {
    A maximum of 30 warnings will be served.
    The module filters the official warnings checking if the location is within the defined area of a warning. If attr distance is used, warnings with
    distance between nearest border of warning area and location lower than distance are selected too.
-   Additionally the module provides a few functions to create HTML-Templates which can be used with weblink.(maybe in future versions)<br><br>
+   Additionally the module provides a few functions to create HTML-Templates which can be used with weblink.<br><br>
    Technical hint:
    Most readings are only updated if changed, except "state". Don't expect events, if the reading isn't changed.<br>
    Events are in general NOT generated for Warn_xy_* readings, except Warn_xy_EventID.
@@ -1508,32 +1157,22 @@ sub NinaSearchAreaID($$) {
         attr Nina_device distance 25<br>
         attr Nina_device latitude 50.000001<br>
         attr Nina_device longitude 9.99999<br><br>
-        attr Nina_device download 1<br>
-        attr Nina_device humanreadable 1<br>
-        attr Nina_device maps eastofengland unitedkingdom<br><br>
-        define UnwetterDetails weblink htmlCode {NinaAsHtml("Nina_device")}<br>
-        define UnwetterMapE_UK weblink htmlCode {NinaAsHtmlKarteLand("Nina_device","eastofengland")}<br>
-        define UnwetterLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}
-        define UnwetterMovie weblink htmlCode {NinaAsHtmlMovie("Nina_device","clouds-precipitation-uk")}
+        define warningweblink weblink htmlCode {NinaAsHtml("Nina_device")}<br>
+        define warningweblinkLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}
       </code>
       <br>&nbsp;
 
       <li><code>[CountryCode]</code>
          <br>
-         Possible values: DE<br/>
+         Defines language for html-views. Possible values: DE|EN|FR|NL<br/>
       </li><br>
       <li><code>[INTERVAL]</code>
          <br>
          Defines the refresh interval. The interval is defined in seconds, so an interval of 3600 means that every hour a refresh will be triggered onetimes. 
          <br>
       </li><br>
-
-      <br><br><br>
       <br>
-
       <br>&nbsp;
-
-
    </ul>
    <br>
 
@@ -1541,9 +1180,7 @@ sub NinaSearchAreaID($$) {
    <b>Get</b>
    <ul>
       <br>
-      <li><code>get &lt;name&gt; soil-frost</code>
-         <br>
-         give info about current soil frost (active|inactive).
+      <li><code>no get functions supported
       </li><br>
    </ul>  
   
@@ -1581,38 +1218,24 @@ sub NinaSearchAreaID($$) {
          geographical longitude[decimal degrees] of the location(longitude of global device will be used if omitted)
          <br>
       </li>
+      <li><code>disableDWD</code>
+         <br>
+         0|1 if defined DWD warnings will be omitted.  
+         <br>
+      </li>
       <li><code>sort_readings_by</code>
          <br>
-         define how warnings will be sorted (distance|warnlevel|creation).  
-         <br>
-      </li>
-      <li><code>download</code>
-         <br>
-         Download maps during update (0|1). 
-         <br>
-      <li><code>savepath</code>
-         <br>
-         Define where to store the map png files (default: /tmp/). 
-         <br>
-      </li>
-      <li><code>maps</code>
-         <br>
-         Define the maps to download space seperated. For possible values see <code>NinaAsHtmlKarteLand</code>.
-         <br>
-      </li>
-      <li><code>humanreadable</code>
-         <br>
-         Add additional Readings Warn_?_Start_Date, Warn_?_Start_Time, Warn_?_End_Date and Warn_?_End_Time containing the coresponding timetamp in a human readable manner. Additionally Warn_?_NinaLevel_Str and Warn_?_Type_Str will be added to device readings (0|1).
-         <br>
-      </li>
-      <li><code>lang</code>
-         <br>
-         Overwrite requested language for short and long warn text. (de|en). 
+         distance|severity|creationde - defines how warnings will be sorted (distance=ascending,severity=descending,creation=descending)).  
          <br>
       </li>
       <li><code>htmlsequence</code>
          <br>
-         define warn order of html output (ascending|descending). 
+         define warn order of html output. ascending(default) means sorted as device-sorting; descending means reversed display 
+         <br>
+      </li>
+      <li><code>htmlattr</code>
+         <br>
+         influences general html-layout; e.g. width="50%" to get smaller html-output
          <br>
       </li>
       <li><code>htmltitle</code>
@@ -1625,19 +1248,11 @@ sub NinaSearchAreaID($$) {
           css-Class of title / header for the html ouput
           <br>
        </li>
-      <li><code>localiconbase</code>
-         <br>
-         define baseurl to host your own thunderstorm warn pics (filetype is png). 
-         <br>
-      </li>
       <li><code>intervalAtWarnLevel</code>
          <br>
          define the interval per warnLevel. Example: 2=1800,3=900,4=300
          <br>
       </li>
-
-
-
       <br>
    </ul>  
 
@@ -1647,47 +1262,38 @@ sub NinaSearchAreaID($$) {
    <b>Readings</b>
    <ul>
       <br>
-      <li><b>Warn_</b><i>00|01|02|03...|09</i><b>_...</b> - active warnings</li>
+      <li><b>Warn_</b><i>00|01|02|03...|29</i><b>_...</b> - active warnings</li>
       <li><b>NewWarnings</b> - last execution created NewWarnings warnings </li>
       <li><b>WarnCount</b> - overall warnings count</li>
       <li><b>WarnCountinArea</b> - just local(distance=0) warnings are counted</li>
-      <li><b>WarnNinaLevel</b> - max. warn level of filtere warnings</li>
-      <li><b>WarnNinaLevel_Color</b> - total warn level color</li>
-      <li><b>WarnNinaLevel_Str</b> - total warn level string</li>
-      <li><b>Warn_</b><i>0</i><b>_Area</b> - location of warning(government area) </li>
-      <li><b>Warn_</b><i>0</i><b>_Category</b> - category of warning</li>
-      <li><b>Warn_</b><i>0</i><b>_Color</b> - color of warning; meaning of colors like DWD uses</li>
-      <li><b>Warn_</b><i>0</i><b>_Contact</b> - institution to be contacted to get further informations</li>
-      <li><b>Warn_</b><i>0</i><b>_Creation</b> - creation timestamp of warning</li>
-      <li><b>Warn_</b><i>0</i><b>_Distance</b> - shortest distance of location to warning area</li>
-      <li><b>Warn_</b><i>0</i><b>_EventID</b> - warning EventID </li>
-      <li><b>Warn_</b><i>0</i><b>_Geocode</b> - geocode of warning - may be omitted in future releases</li>
-      <li><b>Warn_</b><i>0</i><b>_Instruction</b> - warning instruction given by authorities</li>
-      <li><b>Warn_</b><i>0</i><b>_LongText</b> - detailed warn text</li>
-      <li><b>Warn_</b><i>0</i><b>_ShortText</b> - short warn text</li>
-      <li><b>Warn_</b><i>0</i><b>_Sender</b> - responsible institution(code) sending warning</li>
-      <li><b>Warn_</b><i>0</i><b>_Sendername</b> - responsible institution(name) sending warning</li>
-      <li><b>Warn_</b><i>0</i><b>_Severity</b> - Severity of warning </li>
+      <li><b>WarnMaxLevel</b> - max. warn level(severity) of selected warnings</li>
+      <li><b>Warn_</b><i>x</i><b>_Area</b> - location of warning(government area) </li>
+      <li><b>Warn_</b><i>x</i><b>_Category</b> - category of warning</li>
+      <li><b>Warn_</b><i>x</i><b>_Color</b> - color of warning(only dwd); meaning of colors like DWD uses</li>
+      <li><b>Warn_</b><i>x</i><b>_Contact</b> - institution to be contacted to get further informations</li>
+      <li><b>Warn_</b><i>x</i><b>_Creation</b> - creation timestamp of warning</li>
+      <li><b>Warn_</b><i>x</i><b>_Distance</b> - shortest distance of location to warning area</li>
+      <li><b>Warn_</b><i>x</i><b>_End</b> - warning end timestamp</li>
+      <li><b>Warn_</b><i>x</i><b>_Event</b> - ??? </li>
+      <li><b>Warn_</b><i>x</i><b>_EventID</b> - warning EventID </li>
+      <li><b>Warn_</b><i>x</i><b>_Geocode</b> - Text depending on geocode of warning</li>
+      <li><b>Warn_</b><i>x</i><b>_Instruction</b> - warning instruction given by authorities</li>
+      <li><b>Warn_</b><i>x</i><b>_LongText</b> - detailed warn text</li>
+      <li><b>Warn_</b><i>x</i><b>_MsgType</b> - Alert/Cancel</li>
+      <li><b>Warn_</b><i>x</i><b>_Sender</b> - responsible institution(code) sending warning</li>
+      <li><b>Warn_</b><i>x</i><b>_Sendername</b> - responsible institution(name) sending warning</li>
+      <li><b>Warn_</b><i>x</i><b>_Severity</b> - Severity of warning </li>
       <ul>
-        <li><b>0</b> - unknown/canceled</li>
-        <li><b>1</b> - minor</li>
-        <li><b>2</b> - moderate</li>
-        <li><b>3</b> - severe</li>
-        <li><b>4</b> - extreme</li>
+        <li>Unknown</li>
+        <li>Minor</li>
+        <li>Moderate</li>
+        <li>Severe</li>
+        <li>Extreme</li>
       </ul>
-      <li><b>Warn_</b><i>0</i><b>_NinaLevel</b> - Severity of thunderstorm (0-5)</li>
-      <li><b>Warn_</b><i>0</i><b>_NinaLevel_Str</b> - Severity of thunderstorm (text)</li>
-      <li><b>Warn_</b><i>0</i><b>_levelName</b> - Level Warn Name</li>
-      <li><b>Warn_</b><i>0</i><b>_IconURL</b> - cumulated URL to display warn-icons from <a href="http://www.unwetterzentrale.de">www.unwetterzentrale.de</a></li>
-      <li><b>Warn_</b><i>0</i><b>_Creation_Date</b> - warning creation datum </li>
-      <li><b>Warn_</b><i>0</i><b>_Creation_Time</b> - warning creation time </li>
-      <li><b>Warn_</b><i>0</i><b>_Start</b> - begin of warnperiod</li>
-      <li><b>Warn_</b><i>0</i><b>_Start_Date</b> - start date of warnperiod</li>
-      <li><b>Warn_</b><i>0</i><b>_Start_Time</b> - start time of warnperiod</li>
-      <li><b>Warn_</b><i>0</i><b>_End</b> - end of warnperiod</li>
-      <li><b>Warn_</b><i>0</i><b>_End_Date</b> - end date of warnperiod</li>
-      <li><b>Warn_</b><i>0</i><b>_End_Time</b> - end time of warnperiod</li>
+      <li><b>Warn_</b><i>x</i><b>_ShortText</b> - short warn text</li>
       <li><b>currentIntervalMode</b> - default/warn, Interval is read from INTERVAL or INTERVALWARN Internal</li>
+      <li><b>lastConnection</b> - No. of characters read </li>
+      <li><b>durationFetchReadings</b> - ???? </li>
    </ul>
    <br>
 
@@ -1696,62 +1302,14 @@ sub NinaSearchAreaID($$) {
    <ul>
       <br>
 
-      With the additional implemented functions <code>NinaAsHtml, NinaAsHtmlLite, NinaAsHtmlFP, NinaAsHtmlKarteLand and NinaAsHtmlMovie</code> HTML-Code will be created to display warnings and weathermovies, using weblinks.
+      With the additional implemented functions <code>NinaAsHtml, NinaAsHtmlLite</code> HTML-Code will be created to display warnings, using weblinks.
       <br><br><br>
       Example:
       <br>
-      <li><code>define UnwetterDetailiert weblink htmlCode {NinaAsHtml("Nina_device")}</code></li>
+      <li><code>define warningweblink weblink htmlCode {NinaAsHtml("Nina_device")}</code></li>
       <br>
-      <li><code>define UnwetterLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}</code></li>
+      <li><code>define warningweblinkLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}</code></li>
       <br>
-      <li><code>define UnwetterFloorplan weblink htmlCode {NinaAsHtmlFP("Nina_device")}</code></li>
-      <br>
-      <li><code>define UnwetterKarteLand weblink htmlCode {NinaAsHtmlKarteLand("Nina_device","Bayern")}</code></li>
-      <ul>
-        <li>The second parameter should be one of:
-        <ul>
-          <li>europa</li>
-          <br/>
-          <li>deutschland</li>
-          <li>deutschland-small</li>
-          <li>niedersachsen</li>
-          <li>bremen</li>
-          <li>bayern</li>
-          <li>schleswig-holstein</li>
-          <li>hamburg</li>
-          <li>mecklenburg-vorpommern</li>
-          <li>sachsen</li>
-          <li>sachsen-anhalt</li>
-          <li>nordrhein-westfalen</li>
-          <li>thueringen</li>
-          <li>rheinland-pfalz</li>
-          <li>saarland</li>
-          <li>baden-wuerttemberg</li>
-          <li>hessen</li>
-          <li>brandenburg</li>
-          <li>berlin</li>
-          <br/>
-          <li>isobaren1</li>
-          <li>isobaren2</li>
-          <li>isobaren3</li>
-        </ul>          
-        </li>
-      </ul>
-      <li><code>define UnwetterKarteMovie weblink htmlCode {NinaAsHtmlMovie("Nina_device","currents")}</code></li>
-      <ul>
-        <li>The second parameter should be one of:
-        <ul>
-          <li>niederschlag-wolken</li>
-          <li>stroemung</li>
-          <li>temperatur</li>
-          <br/>
-          <li>niederschlag-wolken-de</li>
-          <li>stroemung-de</li>
-          <br/>
-        </ul>          
-        </li>
-      </ul>
-
       <br/><br/>
    </ul>
    <br>
@@ -1769,10 +1327,10 @@ sub NinaSearchAreaID($$) {
 <h3>Nina</h3> 
 <ul>
    <a name="Ninadefine"></a>
-   Das Modul extrahiert Bevölkerungsschutzwarnungen(Nina) von <a href="http://www.unwetterzentrale.de">www.unwetterzentrale.de</a>.
+   Das Modul extrahiert Bevölkerungsschutzwarnungen(Nina) von ....
    <br/>
-   HierfÃ¼r wird die selbe Schnittstelle verwendet die auch die Android App <a href="http://www.alertspro.com">Alerts Pro</a> nutzt.
-   Es werden maximal 10 Standortbezogene Unwetterwarnungen zur VerfÃ¼gung gestellt.
+   HierfÃ¼r wird die selbe Schnittstelle verwendet die auch die Nina-App nutzt.
+   Es werden maximal 30 Warnungen zur VerfÃ¼gung gestellt.
    Weiterhin verfÃ¼gt das Modul Ã¼ber HTML-Templates welche als weblink verwendet werden kÃ¶nnen.
    <br>
    <i>Es nutzt die Perl-Module JSON, Encode::Guess und HTML::Parse</i>.
@@ -1780,25 +1338,20 @@ sub NinaSearchAreaID($$) {
    <b>Define</b>
    <ul>
       <br>
-      <code>define &lt;Name&gt; Nina [L&auml;ndercode] [Postleitzahl] [INTERVAL]</code>
+      <code>define &lt;Name&gt; Nina [L&auml;ndercode] [INTERVAL]</code>
       <br><br><br>
       Beispiel:
       <br>
-      <code>define Nina_device Nina DE 86405 3600</code>
+      <code>define Nina_device Nina DE 90</code>
       <br>&nbsp;
 
       <li><code>[L&auml;ndercode]</code>
          <br>
-         M&ouml;gliche Werte: DE ...<br/>
-      </li><br>
-      <li><code>[Postleitzahl/AreaID]</code>
-         <br>
-         Die Postleitzahl/AreaID des Ortes fÃ¼r den Unwetterinformationen abgefragt werden sollen. 
-         <br>
+                  Definiert Sprache für html-views. Possible values: DE|EN|FR|NL<br/>
       </li><br>
       <li><code>[INTERVAL]</code>
          <br>
-         Definiert das Interval zur aktualisierung der Unwetterwarnungen. Das Interval wird in Sekunden angegeben, somit aktualisiert das Modul bei einem Interval von 3600 jede Stunde 1 mal. 
+         Definiert das Interval zur aktualisierung der Warnungen. Das Interval wird in Sekunden angegeben, somit aktualisiert das Modul bei einem Interval von 3600 jede Stunde 1 mal. 
          <br>
       </li><br>
    </ul>
@@ -1808,52 +1361,9 @@ sub NinaSearchAreaID($$) {
    <b>Get</b>
    <ul>
       <br>
-      <li><code>get &lt;name&gt; Bodenfrost</code>
+      <li><code>get nicht implementiert</code>
          <br>
-         Gibt aus ob aktuell eine Bodenfrostwarnung besteht (active|inactive).
       </li><br>
-      <li><code>get &lt;name&gt; Extremfrost</code>
-         <br>
-         Gibt aus ob aktuell eine Extremfrostwarnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Gewitter</code>
-         <br>
-         Gibt aus ob aktuell eine Gewitter Warnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Glaette</code>
-         <br>
-         Gibt aus ob aktuell eine Glaettewarnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Glatteisregen</code>
-         <br>
-         Gibt aus ob aktuell eine Glatteisregen Warnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Hagel</code>
-         <br>
-         Gibt aus ob aktuell eine Hagel Warnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Hitze</code>
-         <br>
-         Gibt aus ob aktuell eine Hitze Warnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Regen</code>
-         <br>
-         Gibt aus ob aktuell eine Regen Warnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Schneefall</code>
-         <br>
-         Gibt aus ob aktuell eine Schneefall Warnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Sturm</code>
-         <br>
-         Gibt aus ob aktuell eine Sturm Warnung besteht (active|inactive).
-      </li><br>
-      <li><code>get &lt;name&gt; Waldbrand</code>
-         <br>
-         Gibt aus ob aktuell eine Waldbrand Warnung besteht (active|inactive).
-      </li><br>
-
-
    </ul>  
   
    <br>
@@ -1864,7 +1374,7 @@ sub NinaSearchAreaID($$) {
       <br>
       <li><code>set &lt;name&gt; update</code>
          <br>
-         Startet sofort ein neues Auslesen der Unwetterinformationen.
+         Startet sofort ein neues Auslesen der Warnungen.
       </li><br>
    </ul>  
   
@@ -1874,39 +1384,41 @@ sub NinaSearchAreaID($$) {
    <b>Attribute</b>
    <ul>
       <br>
-      <li><code>download</code>
+      </li>
+      <li><code>distance</code>
          <br>
-         Download Unwetterkarten wÃ¤hrend des updates (0|1). 
+	selektiert zusätzliche Warnungen, die über die Lokation hinausgehen anhand der kürzesten Entfernung zum Polygon einer Warnung.         
          <br>
       </li>
-      <li><code>savepath</code>
+      </li>
+      <li><code>latitude</code>
          <br>
-         Pfad zum speichern der Karten (default: /tmp/). 
+         geographische Breite[Dezimalgrad] der Lokation(latitude des global device wird genutzt, sofern das Attribut nicht angegeben wird)
          <br>
       </li>
-      <li><code>maps</code>
+      <li><code>longitude</code>
          <br>
-         Leerzeichen separierte Liste der zu speichernden Karten. FÃ¼r mÃ¶gliche Karten siehe <code>NinaAsHtmlKarteLand</code>.
-         <br>
-      </li>
-      <li><code>humanreadable</code>
-         <br>
-     Anzeige weiterer Readings Warn_?_Start_Date, Warn_?_Start_Time, Warn_?_End_Date, Warn_?_End_Time. Diese Readings enthalten aus dem Timestamp kalkulierte Datums/Zeit Angaben. Weiterhin werden folgende Readings aktivier: Warn_?_Type_Str und Warn_?_NinaLevel_Str welche den Unwettertyp als auch das Unwetter-Warn-Level als Text ausgeben. (0|1) 
+         geographische Länge[Dezimalgrad] der Lokation(latitude des global device wird genutzt, sofern das Attribut nicht angegeben wird)
          <br>
       </li>
-      <li><code>lang</code>
+      <li><code>disableDWD</code>
          <br>
-         Umschalten der angeforderten Sprache fÃ¼r kurz und lange warn text. (de|en|it|fr|es|..). 
+         0|1 wenn definiert, werden keine DWD Warnungen selektiert.  
          <br>
       </li>
       <li><code>sort_readings_by</code>
          <br>
-         Sortierreihenfolge der Warnmeldungen. (start|severity|creation).
+         distance|severity|creation - definiert die Sortierreihenfolge der Warnmeldungen. (distance=ascending,severity=descending,creation=descending).  
+         <br>
+      </li>
+      <li><code>htmlattr</code>
+         <br>
+         beeinflusst das allgemeine html-layout; z.B. width="50%" um eine geringere Bildschirmbreite zu erhalten
          <br>
       </li>
       <li><code>htmlsequence</code>
          <br>
-         Anzeigereihenfolge der html warnungen. (ascending|descending). 
+         Anzeigereihenfolge der html warnungen. ascending(default)=wie im device; descending=umgekehrt zum device. 
          <br>
       </li>
       <li><code>htmltitle</code>
@@ -1919,14 +1431,9 @@ sub NinaSearchAreaID($$) {
          css-Class des Titels der HTML Ausgabe 
          <br>
       </li>
-      <li><code>localiconbase</code>
-         <br>
-         BaseURL angeben um Warn Icons lokal zu hosten. (Dateityp ist png). 
-         <br>
-      </li>
       <li><code>intervalAtWarnLevel</code>
          <br>
-         konfiguriert den Interval je nach WarnLevel. Beispiel: 2=1800,3=900,4=300
+         konfiguriert das Interval je nach WarnLevel. Beispiel: 2=1800,3=900,4=300
          <br>
       </li>
 
@@ -1939,47 +1446,35 @@ sub NinaSearchAreaID($$) {
    <b>Readings</b>
    <ul>
       <br>
-      <li><b>Warn_</b><i>0|1|2|3...|9</i><b>_...</b> - aktive Warnmeldungen</li>
+      <li><b>Warn_</b><i>00|01...|29</i><b>_...</b> - aktive Warnmeldungen</li>
       <li><b>WarnCount</b> - Anzahl der aktiven Warnmeldungen</li>
-      <li><b>WarnNinaLevel</b> - Gesamt Warn Level </li>
-      <li><b>WarnNinaLevel_Color</b> - Gesamt Warn Level Farbe</li>
-      <li><b>WarnNinaLevel_Str</b> - Gesamt Warn Level Text</li>
-      <li><b>Warn_</b><i>0</i><b>_AltitudeMin</b> - minimum HÃ¶he fÃ¼r Warnung </li>
-      <li><b>Warn_</b><i>0</i><b>_AltitudeMax</b> - maximum HÃ¶he fÃ¼r Warnung </li>
-      <li><b>Warn_</b><i>0</i><b>_EventID</b> - EventID der Warnung </li>
-      <li><b>Warn_</b><i>0</i><b>_Creation</b> - Warnungs Erzeugung </li>
-      <li><b>Warn_</b><i>0</i><b>_Creation_Date</b> - Warnungs Erzeugungs Datum </li>
-      <li><b>Warn_</b><i>0</i><b>_Creation_Time</b> - Warnungs Erzeugungs Zeit </li>
-      <li><b>currentIntervalMode</b> - default/warn, aktuell Verwendeter Interval. Internal INTERVAL oder INTERVALWARN</li>
-      <li><b>Warn_</b><i>0</i><b>_Start</b> - Begin der Warnung</li>
-      <li><b>Warn_</b><i>0</i><b>_Start_Date</b> - Startdatum der Warnung</li>
-      <li><b>Warn_</b><i>0</i><b>_Start_Time</b> - Startzeit der Warnung</li>
-      <li><b>Warn_</b><i>0</i><b>_End</b> - Warn Ende</li>
-      <li><b>Warn_</b><i>0</i><b>_End_Date</b> - Enddatum der Warnung</li>
-      <li><b>Warn_</b><i>0</i><b>_End_Time</b> - Endzeit der Warnung</li>
-      <li><b>Warn_</b><i>0</i><b>_Severity</b> - Schwere des Unwetters (0 kein Unwetter, 12 massives Unwetter)</li>
-      <li><b>Warn_</b><i>0</i><b>_Hail</b> - Hagelwarnung (1|0)</li>
-      <li><b>Warn_</b><i>0</i><b>_Type</b> - Art des Unwetters</li>
-      <li><b>Warn_</b><i>0</i><b>_Type_Str</b> - Art des Unwetters (text)</li>
+      <li><b>WarnCountInArea</b> - Anzahl der aktiven Warnmeldungen mit location innerhalb des Warngebiets</li>
+      <li><b>WarnLevelMax</b> - Gesamt Warn Level (abhängig von severity)</li>
+      <li><b>Warn_</b><i>x</i><b>_Area</b> - Region(Stadt, Gemeinde, Landkreis, Bundesland) </li>
+      <li><b>Warn_</b><i>x</i><b>_Category</b> - ??? </li>
+      <li><b>Warn_</b><i>x</i><b>_Creation</b> - Warnungs Erzeugung </li>
+      <li><b>Warn_</b><i>x</i><b>_Distance</b> - Entfernung in km zur Warnregion</li>
+      <li><b>Warn_</b><i>x</i><b>_End</b> - Warn Ende</li>
+      <li><b>Warn_</b><i>x</i><b>_Event</b> - ??? </li>
+      <li><b>Warn_</b><i>x</i><b>_EventID</b> - EventID der Warnung </li>
+      <li><b>Warn_</b><i>x</i><b>_Geocode</b> - Text zum geocode der Warnung</li>
+      <li><b>Warn_</b><i>x</i><b>_Instruction</b> - Anweisung für die Bevölkerung</li>
+      <li><b>Warn_</b><i>x</i><b>_LongText</b> - Langtext der Warnung</li>
+      <li><b>Warn_</b><i>x</i><b>_MsgType</b> - Alert/Cancel</li>
+      <li><b>Warn_</b><i>x</i><b>_Sender</b> - Kürzel für Absender der Warnung</li>
+      <li><b>Warn_</b><i>x</i><b>_Sendername</b> - Name des Absenders der Warnung</li>
+      <li><b>Warn_</b><i>x</i><b>_Severity</b> - Schweregrad der Warnung</li>
       <ul>
-        <li><b>1</b> - unbekannt</li>
-        <li><b>2</b> - Sturm/Orkan</li>
-        <li><b>3</b> - Schneefall</li>
-        <li><b>4</b> - Regen</li>
-        <li><b>5</b> - Extremfrost</li>
-        <li><b>6</b> - Waldbrandgefahr</li>
-        <li><b>7</b> - Gewitter</li>
-        <li><b>8</b> - GlÃ¤tte</li>
-        <li><b>9</b> - Hitze</li>
-        <li><b>10</b> - Glatteisregen</li>
-        <li><b>11</b> - Bodenfrost</li>
+        <li>Unknown</li>
+        <li>Minor</li>
+        <li>Moderate</li>
+        <li>Severe</li>
+        <li>Extreme</li>
       </ul>
-      <li><b>Warn_</b><i>0</i><b>_NinaLevel</b> - Unwetterwarnstufe (0-5)</li>
-      <li><b>Warn_</b><i>0</i><b>_NinaLevel_Str</b> - Unwetterwarnstufe (text)</li>
-      <li><b>Warn_</b><i>0</i><b>_levelName</b> - Level Warn Name</li>
-      <li><b>Warn_</b><i>0</i><b>_ShortText</b> - Kurzbeschreibung der Warnung</li>
-      <li><b>Warn_</b><i>0</i><b>_LongText</b> - AusfÃ¼hrliche Unwetterbeschreibung</li>
-      <li><b>Warn_</b><i>0</i><b>_IconURL</b> - Kumulierte URL um Warnungs-Icon von <a href="http://www.unwetterzentrale.de">www.unwetterzentrale.de</a> anzuzeigen</li>
+      <li><b>Warn_</b><i>x</i><b>_ShortText</b> - Kurzbeschreibung der Warnung</li>
+      <li><b>currentIntervalMode</b> - default/warn, aktuell Verwendeter Interval. Internal INTERVAL oder INTERVALWARN</li>
+      <li><b>lastConnection</b> - Anz. gelesener character aller Warnquellen </li>
+      <li><b>durationFetchReadings</b> - ???? </li>
    </ul>
    <br>
 
@@ -1988,78 +1483,14 @@ sub NinaSearchAreaID($$) {
    <ul>
       <br>
 
-      &Uuml;ber die Funktionen <code>NinaAsHtml, NinaAsHtmlLite, NinaAsHtmlFP, NinaAsHtmlKarteLand, NinaAsHtmlMovie</code> wird HTML-Code zur Warnanzeige und Wetterfilme Ã¼ber weblinks erzeugt.
+      &Uuml;ber die Funktionen <code>NinaAsHtml, NinaAsHtmlLite</code> wird HTML-Code zur Warnanzeige Ã¼ber weblinks erzeugt.
       <br><br><br>
       Beispiele:
       <br>
-      <li><code>define UnwetterDetailiert weblink htmlCode {NinaAsHtml("Nina_device")}</code></li>
+      <li><code>define warningweblink weblink htmlCode {NinaAsHtml("Nina_device")}</code></li>
       <br>
-      <li><code>define UnwetterLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}</code></li>
+      <li><code>define warningweblinkLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}</code></li>
       <br>
-      <li><code>define UnwetterFloorplan weblink htmlCode {NinaAsHtmlFP("Nina_device")}</code></li>
-      <br>
-      <li><code>define UnwetterKarteLand weblink htmlCode {NinaAsHtmlKarteLand("Nina_device","Bayern")}</code></li>
-      <ul>        
-        <li>Der zweite Parameter kann einer der folgenden sein:
-        <ul>      
-          <li>europa</li>
-          <br/>
-          <li>deutschland</li>
-          <li>deutschland-small</li>
-          <li>niedersachsen</li>
-          <li>bremen</li>
-          <li>bayern</li>
-          <li>schleswig-holstein</li>
-          <li>hamburg</li>
-          <li>mecklenburg-vorpommern</li>
-          <li>sachsen</li>
-          <li>sachsen-anhalt</li>
-          <li>nordrhein-westfalen</li>
-          <li>thueringen</li>
-          <li>rheinland-pfalz</li>
-          <li>saarland</li>
-          <li>baden-wuerttemberg</li>
-          <li>hessen</li>
-          <li>brandenburg</li>
-          <li>berlin</li>
-          <br/>
-          <li>isobaren1</li>
-          <li>isobaren2</li>
-          <li>isobaren3</li>
-        </ul>          
-        </li>
-      </ul>
-      <li><code>define UnwetterKarteMovie weblink htmlCode {NinaAsHtmlMovie("Nina_device","niederschlag-wolken-de")}</code></li>
-      <ul>
-        <li>Der zweite Parameter kann einer der folgenden sein:
-        <ul>
-          <li>niederschlag-wolken</li>
-          <li>stroemung</li>
-          <li>temperatur</li>
-          <br/>
-          <li>niederschlag-wolken-de</li>
-          <li>stroemung-de</li>
-          <br/>
-          <li>niederschlag-wolken-ch</li>
-          <li>stroemung-ch</li>
-          <br/>
-          <li>niederschlag-wolken-at</li>
-          <li>stroemung-at</li>
-          <br/>
-          <li>neerslag-wolken-nl</li>
-          <li>stroming-nl</li>
-          <br/>
-          <li>nuages-precipitations-fr</li>
-          <li>courants-fr</li>
-          <br/>
-          <li>clouds-precipitation-uk</li>
-          <li>currents-uk</li>
-          <br/>
-        </ul>          
-        </li>
-      </ul>
-
-
       <br/><br/>
    </ul>
    <br>
