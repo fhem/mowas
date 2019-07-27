@@ -5,7 +5,7 @@ commandref_de_source="CommandRef.de.md"
 commandref_en_source="CommandRef.en.md"
 meta_source="meta.json"
 name="Nina"
-controls_file="controls_Nina.txt"
+controls_file="controls_nina.txt"
 changed_file="CHANGED"
 
 #   +------------------------------------------------------------

@@ -1,2 +1,1 @@
-DEL ./FHEM/77_Nina.pm
-UPD 2019-07-27_12:53:57 54722 FHEM/77_Nina.pm
+controls_nina.txt
