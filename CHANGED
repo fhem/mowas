@@ -1,4 +1,4 @@
-Last Nina updates (27.07.2019)
+Last Nina updates (30.09.2019)
 
   363905c 27.07.2019 12:55 WarnLevelMax: höchster level der selektierten Warnungen Minor=1, Moderate=2, Severe=3, Extreme=4  others=0, reading Warn_xy_Level entfernt, reading Warn_xy_MsgType (Alert|Cancel) hinzugefügt, keine get-Befehle mehr, NinaAsHtml, NinaAsHtml:  mit icons zur groben Visualisierung; Farben nach severity,Cancel=keineFarbe;ansonsten Attribute wie bei UWZ, Begrenzung auf 30 Warnungen, überflüssige Attribute entfernt, commandref überarbeitet, ssl-Problematik, Text des geocodes (anstatt des codes), Korrektur der angezeigten area kürzester Distanz bei Mehrfach-Areas
   7016f39 23.07.2019 18:59 fixed name.

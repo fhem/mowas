@@ -67,7 +67,7 @@ my @FRweekdays = qw(dimanche lundi mardi mercredi jeudi vendredi samedi);
 my @FRmonths   = ("janvier","fÃ©vrier","mars","avril","mai","juin","juillet","aoÃ»t","september","octobre","novembre","decembre");
 
 my $MODUL           = "Nina";
-my $version         = "0.2.0";
+my $version         = "0.3.0";
 
 # Declare functions
 sub Nina_Log($$$);
@@ -84,6 +84,7 @@ sub Nina_Initialize($) {
     $hash->{SetFn}    = "Nina_Set";
 #    $hash->{GetFn}    = "Nina_Get";
     $hash->{AttrList} = "disableDWD:0,1 ".
+			"disableLHP:0,1 ".
 			"distance:selectnumbers,0,1,99,0,lin ".
                         "htmlattr ".
                         "htmltitle ".
@@ -313,15 +314,22 @@ sub Nina_Run($) {
 #    	$response =~ s/\\u/ /g; 
     if (substr($response,0,5) ne "Error") {
     Nina_Log $hash, 5, length($response)." characters captured from DWD:  ".$response;
-    $Nina_warnings = JSON->new->ascii->decode($response);  #'"' expected, at character offset 2 (before "(end of string)") 
-   foreach my $element (@{$Nina_warnings}) {
+#    $Nina_warnings = JSON->new->ascii->decode($response);  #'"' expected, at character offset 2 (before "(end of string)") 
+eval {
+      $Nina_warnings = JSON->new->ascii->decode($response);
+	1;
+} or do {
+  my $e = $@;
+    Nina_Log $hash, 5, " malformed JSON. decode returns: ".$e." server-response was: ".$response;
+};   foreach my $element (@{$Nina_warnings}) {
         push @Nina_records, $element;
     }
     }
     else {
 	$message .= $response;
     }
-    } 
+    }
+    if(!AttrVal($name,"disableLHP",0)) { 
     $response = Nina_JSONAcquire($hash,"https://warnung.bund.de/bbk.lhp/hochwassermeldungen.json"); 	# Hochwasser-Meldungen
 #    	$response =~ s/\\u/ /g; 
     if (substr($response,0,5) ne "Error") {
@@ -333,6 +341,7 @@ sub Nina_Run($) {
     }
     else {
 	$message .= $response;
+    }
     } 
     return "$name|$message" if (defined($message));
      $Nina_warnings = \@Nina_records;
@@ -472,20 +481,29 @@ sub Nina_Done($) {
     readingsBeginUpdate($hash);
     Nina_Log $hash, 5, "Starting Readings Update.";
 
+    my $readingspec= "";
+
     if ( defined $values{Error} ) {
         readingsBulkUpdateIfChanged( $hash, "lastConnection", $values{Error} );
     } else {
 	my $new_warnings_count  = 0;  # new reading NewWarnings
-        while (my ($rName, $rValue) = each(%values) ) {
+	while (my ($rName, $rValue) = each(%values) ) {
+	   if ($rName =~ m/_EventID/) {
+		  if (ReadingsVal($name, $rName, 0) ne $rValue) {
+			  $new_warnings_count++;  # new readings counter
+			  my $message = Nina_deletewarning($hash,"^Warn_". substr($rName,5,2).'_.*$');
+			  if ($message) {
+				  Nina_Log $hash, 4, "Delete old warning before rewrite"; 
+				  Nina_Log $hash, 5, $message;
+			  }
+		  }
+	   }
+	}
+    while (my ($rName, $rValue) = each(%values) ) {
 	    if ($rName ne "WarnCount" && $rName ne "WarnCountInArea") {
 	       if ($rName =~ m/_EventID/) {
-	          if (ReadingsVal($name, $rName, 0) ne $rValue) {
-		     $new_warnings_count++;  # new readings counter
- #                    Nina_Log $hash, 4, "Delete old warning before rewrite"; 
- #                    CommandDeleteReading(undef, "$hash->{NAME} Warn_". substr($rName,5,2)."_.*") # delete all readings of warning
-                  }
-                  readingsBulkUpdateIfChanged( $hash, $rName, $rValue,1 );    # update of reading with event for _EventID, if changed
-		}
+              readingsBulkUpdateIfChanged( $hash, $rName, $rValue,1 );    # update of reading with event for _EventID, if changed
+	       }
 	       else {
 #	           if ($rName =~ m/_Level/) {
 #		     $max_level = $rValue if ($rValue gt $max_level );  # max level of warnings
@@ -505,9 +523,12 @@ sub Nina_Done($) {
             my $newState;
             Nina_Log $hash, 4, "Delete old warnings"; 
             for my $Counter ($values{WarnCount} .. 29) {
-                CommandDeleteReading(undef, "$hash->{NAME} Warn_0${Counter}_.*") if ($Counter < 10);
-                CommandDeleteReading(undef, "$hash->{NAME} Warn_${Counter}_.*") if ($Counter > 9);
-            }
+		my $param = "";        
+ if ($Counter < 10) {$param = "^Warn_0${Counter}_.*".'$';}
+ else { $param = "^Warn_${Counter}_.*".'$';}
+		 my $message = Nina_deletewarning($hash,$param);
+		 Nina_Log $hash, 5, $message if ($message);
+	    }
             if (defined $values{WarnCount}) {
                 # Message by CountryCode
                 $newState = "Warnings: " . $values{WarnCount}." in local area: " . $values{WarnCountInArea};
@@ -518,7 +539,12 @@ sub Nina_Done($) {
             }
   #          readingsBulkUpdateIfChanged($hash, "WarnLevelMax", $max_level,1 );    # update of reading only if changed
             readingsBulkUpdate($hash, "WarnLevelMax", $max_level,1 );    # update of reading and event for each cycle
-            readingsBulkUpdateIfChanged($hash, "NewWarnings", $new_warnings_count,1);
+	    if ($new_warnings_count > 0) {
+         	readingsBulkUpdate($hash, "NewWarnings", $new_warnings_count,1);    # update of reading and event, if new warnings are detected
+            }
+	    else {
+         	readingsBulkUpdateIfChanged($hash, "NewWarnings", $new_warnings_count,1); # update of reading and event only, if changed to 0
+            }
             readingsBulkUpdate($hash, "state", $newState);
             readingsBulkUpdateIfChanged($hash, "lastConnection", keys( %values )." values captured in ".$values{durationFetchReadings}." s",1);
             Nina_Log $hash, 4, keys( %values )." values captured";
@@ -590,9 +616,9 @@ sub Nina_IsInArea {
 			return 0;
 		} else {
 		my $theta = $lon1 - $lon2;
-		my $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
-		$dist  = acos($dist);
-		$dist = rad2deg($dist);
+		my $dist = sin(_deg2rad($lat1)) * sin(_deg2rad($lat2)) + cos(_deg2rad($lat1)) * cos(_deg2rad($lat2)) * cos(_deg2rad($theta));
+		$dist  = _acos($dist);
+		$dist = _rad2deg($dist);
 		return $dist * 60 * 1.852;
 		# $dist = $dist * 60 * 1.1515;
 		# if ($unit eq "K") {
@@ -602,25 +628,6 @@ sub Nina_IsInArea {
 		# };
 		# 	return ($dist);
 		};
-	};
-
-	sub acos {
-		my ($rad) = @_;
-		my $ret = atan2(sqrt(1 - $rad**2), $rad);
-		return $ret;
-	};
-
-	sub deg2rad {
-		my ($deg) = @_;
-		my $pi = atan2(1,1) * 4;
-		return ($deg * $pi / 180);
-	};
-
-
-	sub rad2deg {
-		my ($rad) = @_;
-		my $pi = atan2(1,1) * 4;
-		return ($rad * 180 / $pi);
 	};
 
 	sub isLeft {
@@ -659,6 +666,26 @@ sub Nina_IsInArea {
 
 	return (1, 0) if $wn; # location is in Area
 	return (0, $d); # location is _not_ in Area but $d km away
+
+	sub _acos {
+		my ($rad) = @_;
+		my $ret = atan2(sqrt(1 - $rad**2), $rad);
+		return $ret;
+	};
+
+	sub _deg2rad {
+		my ($deg) = @_;
+		my $pi = atan2(1,1) * 4;
+		return ($deg * $pi / 180);
+	};
+
+
+	sub _rad2deg {
+		my ($rad) = @_;
+		my $pi = atan2(1,1) * 4;
+		return ($rad * 180 / $pi);
+	};
+
 };
 
 #####################################
@@ -697,7 +724,24 @@ sub Nina_preparemessage {
                             "Alert" => "4",
                             "Update" => "4" );
 	my $message = Nina_content($hash,"_EventID",$warning->{'identifier'},$i) if (defined($warning->{'identifier'})); 
-
+################## test to eliminate old contents of reading if position has changed ###################
+#	       if ($rName =~ m/_EventID/) {
+#	          if (ReadingsVal($hash->{NAME}, "Warn_0".$i."_EventID", 0) ne $warning->{'identifier'}) {
+#		     $new_warnings_count++;  # new readings counter
+#                     Nina_Log $hash, 2, "Delete old warning $i before rewrite";
+#  if ($i < 10) {
+#my $vartemp = "$hash->{NAME} Warn_0".$i."_.*";
+#    Nina_Log $hash, 3, "String before deletereading: $vartemp";
+#                $vartemp = CommandDeleteReading(undef, $vartemp);
+#    Nina_Log $hash, 3, "return string after deletereading: $vartemp";
+#                CommandDeleteReading(undef, "$hash->{NAME} Warn_0${Counter}_.*") if ($Counter < 10);
+#                CommandDeleteReading(undef, "$hash->{NAME} Warn_${Counter}_.*") if ($Counter > 9);
+#}
+#                     CommandDeleteReading(undef, "$hash->{NAME} Warn_0".$i."_.*") # delete all readings of warning
+#                  }
+#                  readingsBulkUpdateIfChanged( $hash, $rName, $rValue,1 );    # update of reading with event for _EventID, if changed
+#		}
+################################################################################################################
 	$message .= Nina_content($hash,"_Distance",$distance,$i);
 	$message .= Nina_content($hash,"_Creation",$warning->{'sent'},$i) if (defined($warning->{'sent'}));
 	$message .= Nina_content($hash,"_Sender",$warning->{'sender'},$i) if (defined($warning->{'sender'})); 
@@ -735,15 +779,15 @@ sub Nina_preparemessage {
 	$message .= Nina_content($hash,"_Area",$warning->{'info'}[0]{'area'}[$ii]{'areaDesc'},$i) if (defined($warning->{'info'}[0]{'area'}[$ii]{'areaDesc'})); 
 	$message .= Nina_content($hash,"_Instruction",$warning->{'info'}[0]{'instruction'},$i) if (defined($warning->{'info'}[0]{'instruction'})); 
 	$message .= Nina_content($hash,"_LongText",$warning->{'info'}[0]{'description'},$i) if (defined($warning->{'info'}[0]{'description'})); 
+	$message .= Nina_content($hash,"_Web",$warning->{'info'}[0]{'web'},$i) if (defined($warning->{'info'}[0]{'web'}));
 
 	my $event, my $shorttext = "";
 	$event = $warning->{'info'}[0]{'event'} if (defined($warning->{'info'}[0]{'event'})); 
 	$shorttext = $warning->{'info'}[0]{'headline'} if (defined($warning->{'info'}[0]{'headline'}));
-#	$shorttext .= " ".$warning->{'info'}[0]{'web'} if (defined($warning->{'info'}[0]{'web'}));
 	$message .= Nina_content($hash,"_ShortText",$shorttext,$i) if (defined($shorttext));
         $message .= Nina_content($hash,"_MsgType",$warning->{'msgType'},$i) if (defined($warning->{'msgType'}));
 
-	if (defined($warning->{'sender'}) && substr($warning->{'sender'},4,3) ne "dwd") {
+	if (defined($warning->{'sender'}) && substr($warning->{'sender'},4,3) ne "dwd" && substr($warning->{'sender'},4,4) ne "hoch") {
 	   $message .= Nina_content($hash,"_Sendername",$warning->{'info'}[0]{'parameter'}[0]{'value'},$i) if (defined($warning->{'info'}[0]{'parameter'}[0]{'value'})); 
 #	   $message .= Nina_content($hash,"_Level",$warnlevel{$warning->{'msgType'}},$i) if (defined($warning->{'msgType'}));
 	} 
@@ -784,6 +828,24 @@ sub Nina_content($$$$) {
         Nina_Log $hash, 4, $string;
 	return $string;
 	
+}
+
+########################################
+sub Nina_deletewarning($$) {
+
+    my ( $hash, $readingspec ) = @_;
+
+    my $message="";
+
+    foreach my $reading (grep { /$readingspec/ }
+                                keys %{$hash->{READINGS}} ) {
+       readingsDelete($hash, $reading);
+       $message .= "$reading \n"
+    }
+
+    $message = "deleted readings: $message" if($message);
+
+    return $message;
 }
 
 ########################################
@@ -1220,7 +1282,12 @@ sub Nina_IntervalAtWarnLevel($) {
       </li>
       <li><code>disableDWD</code>
          <br>
-         0|1 if defined DWD warnings will be omitted.  
+         0|1 if defined DWD warnings will be omitted(source DWD).  
+         <br>
+      </li>
+      <li><code>disableLHP</code>
+         <br>
+         0|1 if defined flood warnings will be omitted(source LänderHochwasserPortale).  
          <br>
       </li>
       <li><code>sort_readings_by</code>
@@ -1403,7 +1470,12 @@ sub Nina_IntervalAtWarnLevel($) {
       </li>
       <li><code>disableDWD</code>
          <br>
-         0|1 wenn definiert, werden keine DWD Warnungen selektiert.  
+         0|1 wenn definiert, werden keine DWD Warnungen selektiert(source DWD).  
+         <br>
+      </li>
+      <li><code>disableLHP</code>
+         <br>
+         0|1 wenn definiert, werden keine Hochwasser-Warnungen selektiert(source LänderHochwasserPortale).  
          <br>
       </li>
       <li><code>sort_readings_by</code>
