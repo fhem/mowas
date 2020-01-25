@@ -32,7 +32,7 @@
 #  +*00:00:05 {fhem("define Nina_device Nina DE 50997 1200")}
 # keine korrekte Neuanlage bei defmod(bsp. URL)
 #
-#  $Id: 77_Nina.pm 17646 2018-10-30 11:20:16Z Kölnsolar $
+#  $Id: 77_Nina.pm 17646 2020-01-21 11:20:16Z Kölnsolar $
 #
 ####################################################################################################
 # also a thanks goes to hexenmeister
@@ -346,6 +346,8 @@ eval {
     return "$name|$message" if (defined($message));
      $Nina_warnings = \@Nina_records;
 #     @Nina_records;
+      HttpUtils_Close( $hash->{helper}{httpref});
+      $hash->{helper}{httpref} = "";
 
 #use Data::Dumper;
 #    Nina_Log $hash, 5, "Nina after decoding ".Dumper($Nina_warnings);
@@ -580,16 +582,24 @@ sub Nina_JSONAcquire($$) {
  
     Nina_Log $hash, 4, "Start capturing of $URL";
 
-    my $param = {
+if      (!defined($hash->{helper}{httpref})) { 
+          $hash->{helper}{httpref} = {
 		url        => "$URL",
 		timeout    => 5,
 		hash       => $hash,
 		method     => "GET",
 		header     => "",
+		keepalive  => 1,
+#		loglevel   => 2,   #just for testing purposes, if not set, loglevel is 4
                 sslargs => { SSL_version => 'TLSv12' },  
 		};
-
-    my ($err, $data) = HttpUtils_BlockingGet($param);
+    Nina_Log $hash, 4, "1. https-request prepared";
+}
+else {
+          $hash->{helper}{httpref}{url} = "$URL";
+    Nina_Log $hash, 4, "n. https-request prepared";
+}
+    my ($err, $data) = HttpUtils_BlockingGet($hash->{helper}{httpref});
      
     if ( $err ne "" ) {
     	my $err_log  =  "Can't get $URL -- " . $err;
@@ -597,7 +607,9 @@ sub Nina_JSONAcquire($$) {
         Nina_Log $hash, 1, "Error: $err_log";
         return "Error|Error " . $err;
     }
-
+    else {
+#      $hash->{helper}{httpref} = "";
+    }
     Nina_Log $hash, 5, length($data)." characters captured:  $data";
     return $data;
 }
@@ -756,7 +768,7 @@ sub Nina_preparemessage {
 	Nina_Log $hash, 2, "Warn_".$i."_urgency: ".$warning->{'info'}[0]{'urgency'} if (defined($warning->{'info'}[0]{'urgency'}) && $warning->{'info'}[0]{'urgency'} ne "Immediate" && $warning->{'info'}[0]{'urgency'} ne "Unknown"); 
 # severity bei dwd scheinbar korrespondierend zur Farbe orange=Moderate, rot=Severe, violett=Extreme, Nina: Minor
 	Nina_Log $hash, 2, "Warn_".$i."_severity: ".$warning->{'info'}[0]{'severity'} if (defined($warning->{'info'}[0]{'severity'}) && $warning->{'info'}[0]{'severity'} ne "Severe" && $warning->{'info'}[0]{'severity'} ne "Moderate" && $warning->{'info'}[0]{'severity'} ne "Extreme" && $warning->{'info'}[0]{'severity'} ne "Minor"); 
-	Nina_Log $hash, 2, "Warn_".$i."_responseType: ".$warning->{'info'}[0]{'responseType'}[0] if (defined($warning->{'info'}[0]{'responseType'}[0]) && $warning->{'info'}[0]{'responseType'}[0] ne "Prepare" && $warning->{'info'}[0]{'responseType'}[0] ne "Monitor"); 
+	Nina_Log $hash, 2, "Warn_".$i."_responseType: ".$warning->{'info'}[0]{'responseType'}[0] if (defined($warning->{'info'}[0]{'responseType'}[0]) && $warning->{'info'}[0]{'responseType'}[0] ne "Prepare" && $warning->{'info'}[0]{'responseType'}[0] ne "Monitor"&& $warning->{'info'}[0]{'responseType'}[0] ne "None"); 
 
 #        Nina_Log $hash, 4, "Warn_".$i."_levelName: ".$warning->{'payload'}{'levelName'};
 #        $message .= "Warn_".$i."_levelName|".$warning->{'payload'}{'levelName'}."|";
@@ -794,6 +806,8 @@ sub Nina_preparemessage {
 	else {
 	   $message .= Nina_content($hash,"_Sendername",$warning->{'info'}[0]{'senderName'},$i); 
 	   $message .= Nina_content($hash,"_Event",$warning->{'info'}[0]{'event'},$i) if (defined($warning->{'info'}[0]{'event'})); 
+#	Nina_Log $hash, 2, "Warning with sender ".$warning->{'sender'}." error line 797 event: ".$warning->{'info'}[0]{'event'}." eventCode: ".$warning->{'info'}[0]{'eventCode'}; 
+            if (defined($warning->{'info'}[0]{'eventCode'})) {
             for my $Counter (0 .. scalar(@{$warning->{'info'}[0]{'eventCode'}})-1) {
 	 	if($warning->{'info'}[0]{'eventCode'}[$Counter]{'valueName'} eq "AREA_COLOR") {
 		   my $color_text = $color{$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'}};
@@ -803,6 +817,7 @@ sub Nina_preparemessage {
 	 	elsif($warning->{'info'}[0]{'eventCode'}[$Counter]{'valueName'} eq "GROUP") {
 		   $event .= ", ".$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'};
 	    	}
+	    }
 	    }
 	} 
 	
