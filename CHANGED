@@ -1,7 +1,6 @@
-Last Nina updates (25.01.2020)
-
+Last Nina updates (13.03.2021)
+  1547ca1 25.01.2020 18:53 22.01.2020: reduction of tls-handshakes, minor changes(e.g. additional valid field contents => reduction of level2-warnings)
   6a600be 30.09.2019 14:29 - new reading Warn_xy_Web if defined - Attribut disableLHP -  0(default),1 zum abschalten von Hochwasserwarnungen(LHP=LänderHochwasserPortale) - code changes for technical reasons - error correction:   - update/event von newwarnings, wenn sich Warnungen ändern, aber die Anz. gleich bleibt   - reading sendername für die hochwassermeldungen liefert keine daten   - tw. falsche Inhalte in readings einer Warnung, die von der Warnung stammen, die vorher die Position/Rangfolge inne hatte
   363905c 27.07.2019 12:55 WarnLevelMax: höchster level der selektierten Warnungen Minor=1, Moderate=2, Severe=3, Extreme=4  others=0, reading Warn_xy_Level entfernt, reading Warn_xy_MsgType (Alert|Cancel) hinzugefügt, keine get-Befehle mehr, NinaAsHtml, NinaAsHtml:  mit icons zur groben Visualisierung; Farben nach severity,Cancel=keineFarbe;ansonsten Attribute wie bei UWZ, Begrenzung auf 30 Warnungen, überflüssige Attribute entfernt, commandref überarbeitet, ssl-Problematik, Text des geocodes (anstatt des codes), Korrektur der angezeigten area kürzester Distanz bei Mehrfach-Areas
   7016f39 23.07.2019 18:59 fixed name.
   511327a 23.07.2019 01:13 bump version
-  12b75d3 15.07.2019 12:51 changed name

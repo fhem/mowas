@@ -394,6 +394,7 @@ Nina_Log $hash, 4, "Start Loop of record selection: latitude=$latitude, longitud
 		my ($ii, $flag_warning_in_area)  = (0,0,);# $ii counter for area array
 		Nina_Log $hash, 4, "Record with sender: ".$single_warning->{'sender'};
 		while(defined($single_warning->{'info'}[0]{'area'}[$ii])) {
+			$single_warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'valueName'} = "" if (!defined($single_warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'valueName'}));
 			Nina_Log $hash, 4, "       Record with geocode: ".$single_warning->{'info'}[0]{'area'}[$ii]{'geocode'}[0]{'valueName'};
 			my $iii = 0;  # counter for polygon array within area array
 			while(defined($single_warning->{'info'}[0]{'area'}[$ii]{'polygon'}[$iii]) && !$flag_warning_in_area) {
@@ -724,8 +725,11 @@ sub Nina_preparemessage {
     my %color   = ( "0 255 0" => "green", 
                     "255 255 0" => "yellow",
                     "255 153 0" => "orange",
+                    "251 140 0" => "dark orange",
                     "255 0 0" => "red",
-                    "173 0 99" => "violet" );
+                    "229 57 53" => "light red",
+                    "173 0 99" => "violet",
+                    "158 70 248" => "violet" );
 
         my %warnlevel = ( "green" => "0",
                             "yellow" => "1",
@@ -799,7 +803,8 @@ sub Nina_preparemessage {
 	$message .= Nina_content($hash,"_ShortText",$shorttext,$i) if (defined($shorttext));
         $message .= Nina_content($hash,"_MsgType",$warning->{'msgType'},$i) if (defined($warning->{'msgType'}));
 
-	if (defined($warning->{'sender'}) && substr($warning->{'sender'},4,3) ne "dwd" && substr($warning->{'sender'},4,4) ne "hoch") {
+# sender of dwd was CAP@dwd.de & is now opendata@dwd.de; sender of hochwasserzentralen: CAP@hochwasserzentralen.de
+	if (defined($warning->{'sender'}) && substr($warning->{'sender'},9,3) ne "dwd" && substr($warning->{'sender'},4,4) ne "hoch") {
 	   $message .= Nina_content($hash,"_Sendername",$warning->{'info'}[0]{'parameter'}[0]{'value'},$i) if (defined($warning->{'info'}[0]{'parameter'}[0]{'value'})); 
 #	   $message .= Nina_content($hash,"_Level",$warnlevel{$warning->{'msgType'}},$i) if (defined($warning->{'msgType'}));
 	} 
@@ -811,6 +816,7 @@ sub Nina_preparemessage {
             for my $Counter (0 .. scalar(@{$warning->{'info'}[0]{'eventCode'}})-1) {
 	 	if($warning->{'info'}[0]{'eventCode'}[$Counter]{'valueName'} eq "AREA_COLOR") {
 		   my $color_text = $color{$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'}};
+		   Nina_Log $hash, 2, "color of warning  line 818 " . $warning->{'info'}[0]{'eventCode'}[$Counter]{'value'} if (!defined($color_text));
 		   $message .= Nina_content($hash,"_Color",$color_text,$i);
 #		   $message .= Nina_content($hash,"_Level",$warnlevel{$color_text},$i);
 	    	}
@@ -818,6 +824,14 @@ sub Nina_preparemessage {
 		   $event .= ", ".$warning->{'info'}[0]{'eventCode'}[$Counter]{'value'};
 	    	}
 	    }
+	    }
+# details of dwd weather warnings
+            if (defined($warning->{'info'}[0]{'parameter'})) {
+            my $dwd_details = undef;
+            for my $Counter (0 .. scalar(@{$warning->{'info'}[0]{'parameter'}})-1) {
+	 	$dwd_details .= $warning->{'info'}[0]{'parameter'}[$Counter]{'valueName'}.": ".$warning->{'info'}[0]{'parameter'}[$Counter]{'value'}."; ";
+	    }
+	    $message .= Nina_content($hash,"_Parameter",$dwd_details,$i) if (defined($dwd_details));
 	    }
 	} 
 	
@@ -1205,385 +1219,13 @@ sub Nina_IntervalAtWarnLevel($) {
 
 =begin html
 
-<a name="Nina"></a>
-<h3>Nina</h3>
-<ul>
-   <a name="Ninadefine"></a>
-   This modul extracts desaster and weather warnings like <a href="https://warnung.bund.de/meldungen">warnung.bund.de/meldungen</a>.
-   <br/>
-   Therefore the same interface is used as the official german warn app Nina does.
-   A maximum of 30 warnings will be served.
-   The module filters the official warnings checking if the location is within the defined area of a warning. If attr distance is used, warnings with
-   distance between nearest border of warning area and location lower than distance are selected too.
-   Additionally the module provides a few functions to create HTML-Templates which can be used with weblink.<br><br>
-   Technical hint:
-   Most readings are only updated if changed, except "state". Don't expect events, if the reading isn't changed.<br>
-   Events are in general NOT generated for Warn_xy_* readings, except Warn_xy_EventID.
-   <br><br>
-   <i>The following Perl-Modules are used within this module: JSON, Encode::Guess </i>.
-   <br/><br/>
-   <b>Define</b>
-   <ul>
-      <br>
-      <code>define &lt;Name&gt; Nina [CountryCode] [INTERVAL]</code>
-      <br><br>
-      Example:
-      <br>
-      <code>
-        define Nina_device Nina DE 90<br>
-        attr Nina_device distance 25<br>
-        attr Nina_device latitude 50.000001<br>
-        attr Nina_device longitude 9.99999<br><br>
-        define warningweblink weblink htmlCode {NinaAsHtml("Nina_device")}<br>
-        define warningweblinkLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}
-      </code>
-      <br>&nbsp;
-
-      <li><code>[CountryCode]</code>
-         <br>
-         Defines language for html-views. Possible values: DE|EN|FR|NL<br/>
-      </li><br>
-      <li><code>[INTERVAL]</code>
-         <br>
-         Defines the refresh interval. The interval is defined in seconds, so an interval of 3600 means that every hour a refresh will be triggered onetimes. 
-         <br>
-      </li><br>
-      <br>
-      <br>&nbsp;
-   </ul>
-   <br>
-
-   <a name="Ninaget"></a>
-   <b>Get</b>
-   <ul>
-      <br>
-      <li><code>no get functions supported
-      </li><br>
-   </ul>  
-  
-   <br>
-
-   <a name="Ninaset"></a>
-   <b>Set</b>
-   <ul>
-      <br>
-      <li><code>set &lt;name&gt; update</code>
-         <br>
-         Executes an immediate update of warnings.
-      </li><br>
-   </ul>  
-  
-   <br>
-   <a name="Ninaattr"></a>
-   <b>Attributes</b>
-   <ul>
-      <br>
-      </li>
-      <li><code>distance</code>
-         <br>
-         selects additional warnings of warning areas with distance lower than distance between location and nearest border of warning area. 
-         <br>
-      </li>
-      </li>
-      <li><code>latitude</code>
-         <br>
-         geographical latitude[decimal degrees] of the location(latitude of global device will be used if omitted)
-         <br>
-      </li>
-      <li><code>longitude</code>
-         <br>
-         geographical longitude[decimal degrees] of the location(longitude of global device will be used if omitted)
-         <br>
-      </li>
-      <li><code>disableDWD</code>
-         <br>
-         0|1 if defined DWD warnings will be omitted(source DWD).  
-         <br>
-      </li>
-      <li><code>disableLHP</code>
-         <br>
-         0|1 if defined flood warnings will be omitted(source LänderHochwasserPortale).  
-         <br>
-      </li>
-      <li><code>sort_readings_by</code>
-         <br>
-         distance|severity|creationde - defines how warnings will be sorted (distance=ascending,severity=descending,creation=descending)).  
-         <br>
-      </li>
-      <li><code>htmlsequence</code>
-         <br>
-         define warn order of html output. ascending(default) means sorted as device-sorting; descending means reversed display 
-         <br>
-      </li>
-      <li><code>htmlattr</code>
-         <br>
-         influences general html-layout; e.g. width="50%" to get smaller html-output
-         <br>
-      </li>
-      <li><code>htmltitle</code>
-         <br>
-          title / header for the html ouput
-          <br>
-       </li>
-       <li><code>htmltitleclass</code>
-          <br>
-          css-Class of title / header for the html ouput
-          <br>
-       </li>
-      <li><code>intervalAtWarnLevel</code>
-         <br>
-         define the interval per warnLevel. Example: 2=1800,3=900,4=300
-         <br>
-      </li>
-      <br>
-   </ul>  
-
-   <br>
-
-   <a name="Ninareading"></a>
-   <b>Readings</b>
-   <ul>
-      <br>
-      <li><b>Warn_</b><i>00|01|02|03...|29</i><b>_...</b> - active warnings</li>
-      <li><b>NewWarnings</b> - last execution created NewWarnings warnings </li>
-      <li><b>WarnCount</b> - overall warnings count</li>
-      <li><b>WarnCountinArea</b> - just local(distance=0) warnings are counted</li>
-      <li><b>WarnMaxLevel</b> - max. warn level(severity) of selected warnings</li>
-      <li><b>Warn_</b><i>x</i><b>_Area</b> - location of warning(government area) </li>
-      <li><b>Warn_</b><i>x</i><b>_Category</b> - category of warning</li>
-      <li><b>Warn_</b><i>x</i><b>_Color</b> - color of warning(only dwd); meaning of colors like DWD uses</li>
-      <li><b>Warn_</b><i>x</i><b>_Contact</b> - institution to be contacted to get further informations</li>
-      <li><b>Warn_</b><i>x</i><b>_Creation</b> - creation timestamp of warning</li>
-      <li><b>Warn_</b><i>x</i><b>_Distance</b> - shortest distance of location to warning area</li>
-      <li><b>Warn_</b><i>x</i><b>_End</b> - warning end timestamp</li>
-      <li><b>Warn_</b><i>x</i><b>_Event</b> - ??? </li>
-      <li><b>Warn_</b><i>x</i><b>_EventID</b> - warning EventID </li>
-      <li><b>Warn_</b><i>x</i><b>_Geocode</b> - Text depending on geocode of warning</li>
-      <li><b>Warn_</b><i>x</i><b>_Instruction</b> - warning instruction given by authorities</li>
-      <li><b>Warn_</b><i>x</i><b>_LongText</b> - detailed warn text</li>
-      <li><b>Warn_</b><i>x</i><b>_MsgType</b> - Alert/Cancel</li>
-      <li><b>Warn_</b><i>x</i><b>_Sender</b> - responsible institution(code) sending warning</li>
-      <li><b>Warn_</b><i>x</i><b>_Sendername</b> - responsible institution(name) sending warning</li>
-      <li><b>Warn_</b><i>x</i><b>_Severity</b> - Severity of warning </li>
-      <ul>
-        <li>Unknown</li>
-        <li>Minor</li>
-        <li>Moderate</li>
-        <li>Severe</li>
-        <li>Extreme</li>
-      </ul>
-      <li><b>Warn_</b><i>x</i><b>_ShortText</b> - short warn text</li>
-      <li><b>currentIntervalMode</b> - default/warn, Interval is read from INTERVAL or INTERVALWARN Internal</li>
-      <li><b>lastConnection</b> - No. of characters read </li>
-      <li><b>durationFetchReadings</b> - ???? </li>
-   </ul>
-   <br>
-
-   <a name="Ninaweblinks"></a>
-   <b>Weblinks</b>
-   <ul>
-      <br>
-
-      With the additional implemented functions <code>NinaAsHtml, NinaAsHtmlLite</code> HTML-Code will be created to display warnings, using weblinks.
-      <br><br><br>
-      Example:
-      <br>
-      <li><code>define warningweblink weblink htmlCode {NinaAsHtml("Nina_device")}</code></li>
-      <br>
-      <li><code>define warningweblinkLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}</code></li>
-      <br>
-      <br/><br/>
-   </ul>
-   <br>
- 
-
-</ul> 
-
 
 
 =end html
 
 =begin html_DE
 
-<a name="Nina"></a>
-<h3>Nina</h3> 
-<ul>
-   <a name="Ninadefine"></a>
-   Das Modul extrahiert Bevölkerungsschutzwarnungen(Nina) von ....
-   <br/>
-   HierfÃ¼r wird die selbe Schnittstelle verwendet die auch die Nina-App nutzt.
-   Es werden maximal 30 Warnungen zur VerfÃ¼gung gestellt.
-   Weiterhin verfÃ¼gt das Modul Ã¼ber HTML-Templates welche als weblink verwendet werden kÃ¶nnen.
-   <br>
-   <i>Es nutzt die Perl-Module JSON, Encode::Guess und HTML::Parse</i>.
-   <br/><br/>
-   <b>Define</b>
-   <ul>
-      <br>
-      <code>define &lt;Name&gt; Nina [L&auml;ndercode] [INTERVAL]</code>
-      <br><br><br>
-      Beispiel:
-      <br>
-      <code>define Nina_device Nina DE 90</code>
-      <br>&nbsp;
 
-      <li><code>[L&auml;ndercode]</code>
-         <br>
-                  Definiert Sprache für html-views. Possible values: DE|EN|FR|NL<br/>
-      </li><br>
-      <li><code>[INTERVAL]</code>
-         <br>
-         Definiert das Interval zur aktualisierung der Warnungen. Das Interval wird in Sekunden angegeben, somit aktualisiert das Modul bei einem Interval von 3600 jede Stunde 1 mal. 
-         <br>
-      </li><br>
-   </ul>
-   <br>
-
-   <a name="Ninaget"></a>
-   <b>Get</b>
-   <ul>
-      <br>
-      <li><code>get nicht implementiert</code>
-         <br>
-      </li><br>
-   </ul>  
-  
-   <br>
-
-     <a name="Ninaset"></a>
-   <b>Set</b>
-   <ul>
-      <br>
-      <li><code>set &lt;name&gt; update</code>
-         <br>
-         Startet sofort ein neues Auslesen der Warnungen.
-      </li><br>
-   </ul>  
-  
-   <br>
-
-   <a name="Ninaattr"></a>
-   <b>Attribute</b>
-   <ul>
-      <br>
-      </li>
-      <li><code>distance</code>
-         <br>
-	selektiert zusätzliche Warnungen, die über die Lokation hinausgehen anhand der kürzesten Entfernung zum Polygon einer Warnung.         
-         <br>
-      </li>
-      </li>
-      <li><code>latitude</code>
-         <br>
-         geographische Breite[Dezimalgrad] der Lokation(latitude des global device wird genutzt, sofern das Attribut nicht angegeben wird)
-         <br>
-      </li>
-      <li><code>longitude</code>
-         <br>
-         geographische Länge[Dezimalgrad] der Lokation(latitude des global device wird genutzt, sofern das Attribut nicht angegeben wird)
-         <br>
-      </li>
-      <li><code>disableDWD</code>
-         <br>
-         0|1 wenn definiert, werden keine DWD Warnungen selektiert(source DWD).  
-         <br>
-      </li>
-      <li><code>disableLHP</code>
-         <br>
-         0|1 wenn definiert, werden keine Hochwasser-Warnungen selektiert(source LänderHochwasserPortale).  
-         <br>
-      </li>
-      <li><code>sort_readings_by</code>
-         <br>
-         distance|severity|creation - definiert die Sortierreihenfolge der Warnmeldungen. (distance=ascending,severity=descending,creation=descending).  
-         <br>
-      </li>
-      <li><code>htmlattr</code>
-         <br>
-         beeinflusst das allgemeine html-layout; z.B. width="50%" um eine geringere Bildschirmbreite zu erhalten
-         <br>
-      </li>
-      <li><code>htmlsequence</code>
-         <br>
-         Anzeigereihenfolge der html warnungen. ascending(default)=wie im device; descending=umgekehrt zum device. 
-         <br>
-      </li>
-      <li><code>htmltitle</code>
-         <br>
-         Titel / Ueberschrift der HTML Ausgabe 
-         <br>
-      </li>
-      <li><code>htmltitleclass</code>
-         <br>
-         css-Class des Titels der HTML Ausgabe 
-         <br>
-      </li>
-      <li><code>intervalAtWarnLevel</code>
-         <br>
-         konfiguriert das Interval je nach WarnLevel. Beispiel: 2=1800,3=900,4=300
-         <br>
-      </li>
-
-      <br>
-   </ul>  
-
-   <br>
-
-   <a name="Ninareading"></a>
-   <b>Readings</b>
-   <ul>
-      <br>
-      <li><b>Warn_</b><i>00|01...|29</i><b>_...</b> - aktive Warnmeldungen</li>
-      <li><b>WarnCount</b> - Anzahl der aktiven Warnmeldungen</li>
-      <li><b>WarnCountInArea</b> - Anzahl der aktiven Warnmeldungen mit location innerhalb des Warngebiets</li>
-      <li><b>WarnLevelMax</b> - Gesamt Warn Level (abhängig von severity)</li>
-      <li><b>Warn_</b><i>x</i><b>_Area</b> - Region(Stadt, Gemeinde, Landkreis, Bundesland) </li>
-      <li><b>Warn_</b><i>x</i><b>_Category</b> - ??? </li>
-      <li><b>Warn_</b><i>x</i><b>_Creation</b> - Warnungs Erzeugung </li>
-      <li><b>Warn_</b><i>x</i><b>_Distance</b> - Entfernung in km zur Warnregion</li>
-      <li><b>Warn_</b><i>x</i><b>_End</b> - Warn Ende</li>
-      <li><b>Warn_</b><i>x</i><b>_Event</b> - ??? </li>
-      <li><b>Warn_</b><i>x</i><b>_EventID</b> - EventID der Warnung </li>
-      <li><b>Warn_</b><i>x</i><b>_Geocode</b> - Text zum geocode der Warnung</li>
-      <li><b>Warn_</b><i>x</i><b>_Instruction</b> - Anweisung für die Bevölkerung</li>
-      <li><b>Warn_</b><i>x</i><b>_LongText</b> - Langtext der Warnung</li>
-      <li><b>Warn_</b><i>x</i><b>_MsgType</b> - Alert/Cancel</li>
-      <li><b>Warn_</b><i>x</i><b>_Sender</b> - Kürzel für Absender der Warnung</li>
-      <li><b>Warn_</b><i>x</i><b>_Sendername</b> - Name des Absenders der Warnung</li>
-      <li><b>Warn_</b><i>x</i><b>_Severity</b> - Schweregrad der Warnung</li>
-      <ul>
-        <li>Unknown</li>
-        <li>Minor</li>
-        <li>Moderate</li>
-        <li>Severe</li>
-        <li>Extreme</li>
-      </ul>
-      <li><b>Warn_</b><i>x</i><b>_ShortText</b> - Kurzbeschreibung der Warnung</li>
-      <li><b>currentIntervalMode</b> - default/warn, aktuell Verwendeter Interval. Internal INTERVAL oder INTERVALWARN</li>
-      <li><b>lastConnection</b> - Anz. gelesener character aller Warnquellen </li>
-      <li><b>durationFetchReadings</b> - ???? </li>
-   </ul>
-   <br>
-
-   <a name="Ninaweblinks"></a>
-   <b>Weblinks</b>
-   <ul>
-      <br>
-
-      &Uuml;ber die Funktionen <code>NinaAsHtml, NinaAsHtmlLite</code> wird HTML-Code zur Warnanzeige Ã¼ber weblinks erzeugt.
-      <br><br><br>
-      Beispiele:
-      <br>
-      <li><code>define warningweblink weblink htmlCode {NinaAsHtml("Nina_device")}</code></li>
-      <br>
-      <li><code>define warningweblinkLite weblink htmlCode {NinaAsHtmlLite("Nina_device")}</code></li>
-      <br>
-      <br/><br/>
-   </ul>
-   <br>
- 
-
-</ul>
 
 =end html_DE
 =cut
