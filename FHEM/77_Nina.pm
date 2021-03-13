@@ -1086,15 +1086,15 @@ sub NinaHtmlFrame($$$$) {
                             "Moderate" => "orange",
                             "Severe" => "red",
                             "Extreme" => "fuchsia" );
-my %icon_tab = ( "CAP\@hochwasserzentralen.de" => "https://warnung.bund.de/assets/images/icons/ic_hochwasser_weiss.png", 
-                 "CAP\@dwd.de" => "https://warnung.bund.de/assets/images/icons/ic_unwetter_weiss.png" );
+my %icon_tab = ( "CAP\@hochwasserzentralen.de" => "https://warnung.bund.de/assets/icons/report_hochwasser.svg",
+                 "opendata\@dwd.de" => "https://warnung.bund.de/assets/icons/report_unwetterwarnung.svg" );
 
 		my ($hash,$readingStart,$attr,$parm) = @_;
 
 		my $ret = "";
 		my $name = $hash->{NAME};
  my $icon = $icon_tab{ReadingsVal( $name, $readingStart . "_Sender", "")};
- $icon = "https://warnung.bund.de/assets/images/icons/ic_mowa_weiss.png" if(!defined($icon));
+ $icon = "https://warnung.bund.de/assets/icons/report_mowas.svg" if(!defined($icon));
  my $iconcolor = "";
   $iconcolor = $severitycolor{ReadingsVal( $name, $readingStart . "_Severity", "")} if(ReadingsVal( $name, $readingStart . "_MsgType", "") ne "Cancel");
 
